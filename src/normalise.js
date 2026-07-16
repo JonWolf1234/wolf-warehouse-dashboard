@@ -432,17 +432,22 @@ export function normaliseOpportunity(rawOpportunity, separatelyFetchedItems, opt
     "job_number"
   ]);
   const name = firstValue(opportunity, ["subject", "name", "title", "description"]) || `Job ${reference || id}`;
-  const customer = options.includeCustomerName
-    ? firstValue(opportunity, [
-        "customer_name",
-        "organization_name",
-        "member_name",
-        "billing_address_name",
-        "customer.name",
-        "organization.name",
-        "member.name"
-      ])
-    : null;
+ const customer = options.includeCustomerName
+  ? options.customerName ||
+    firstValue(opportunity, [
+      "customer_name",
+      "organisation_name",
+      "organization_name",
+      "member_name",
+      "billing_address_name",
+      "customer.name",
+      "organisation.name",
+      "organization.name",
+      "member.name",
+      "member.organisation_name",
+      "member.organization_name"
+    ])
+  : null;
 
   const status = firstValue(opportunity, ["status_name", "status", "state", "opportunity_status"]);
   const type = firstValue(opportunity, ["opportunity_type", "type_name", "type"]);
