@@ -1,47 +1,79 @@
 <!doctype html>
-<html lang="en-GB">
+<html lang="en-GB" data-theme="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#111315" />
+    <meta id="themeColorMeta" name="theme-color" content="#0b0d0f" />
     <title>Wolf Warehouse Schedule</title>
+
+    <script>
+      (() => {
+        const savedTheme = localStorage.getItem("warehouseTheme");
+        const preferredTheme = window.matchMedia("(prefers-color-scheme: light)").matches
+          ? "light"
+          : "dark";
+        document.documentElement.dataset.theme = savedTheme || preferredTheme;
+      })();
+    </script>
+
     <link rel="stylesheet" href="styles.css" />
   </head>
+
   <body>
-    <div class="app-shell">
-      <header class="topbar">
-        <div class="brand-block">
-          <div class="brand-mark"><strong>WOLF</strong><span>Lighting</span></div>
-          <div>
-            <p class="eyebrow">Live operations</p>
-            <h1 id="screenTitle">Warehouse Schedule</h1>
-          </div>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <div class="header-title-block">
+          <p class="eyebrow">Live operations</p>
+          <h1 id="screenTitle">Warehouse Schedule</h1>
         </div>
+
+        <a class="header-logo" href="#dashboard" aria-label="Wolf Lighting warehouse dashboard">
+          <img
+            src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png"
+            alt="Wolf Lighting"
+          />
+        </a>
 
         <div class="topbar-actions">
           <div class="connection-state" id="connectionState" aria-live="polite">
-            <span class="state-dot"></span>
+            <span class="state-dot" aria-hidden="true"></span>
             <span>Not connected</span>
           </div>
-          <button class="button button-quiet" id="fullscreenButton" type="button">Full screen</button>
-          <button class="button button-primary" id="refreshButton" type="button">Refresh</button>
-        </div>
-      </header>
 
+          <button class="button button-header" id="themeToggle" type="button" aria-pressed="false">
+            <span class="theme-icon" id="themeIcon" aria-hidden="true">☀</span>
+            <span id="themeLabel">Light mode</span>
+          </button>
+
+          <button class="button button-header button-fullscreen" id="fullscreenButton" type="button">
+            Full screen
+          </button>
+
+          <button class="button button-primary" id="refreshButton" type="button">
+            Refresh
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-shell" id="dashboard">
       <main>
         <section class="metrics-grid" aria-label="Warehouse totals">
-          <article class="metric-card">
+          <article class="metric-card metric-jobs">
             <span>Jobs shown</span>
             <strong id="jobsMetric">0</strong>
           </article>
-          <article class="metric-card">
+
+          <article class="metric-card metric-items">
             <span>Items to prep</span>
             <strong id="itemsMetric">0</strong>
           </article>
-          <article class="metric-card">
+
+          <article class="metric-card metric-prepared">
             <span>Items prepared</span>
             <strong id="preparedMetric">0</strong>
           </article>
+
           <article class="metric-card metric-alert">
             <span>Urgent jobs</span>
             <strong id="urgentMetric">0</strong>
@@ -51,7 +83,12 @@
         <section class="controls-panel" aria-label="Search and date filters">
           <label class="field field-search">
             <span>Search</span>
-            <input id="searchInput" type="search" placeholder="Job name, number, client or status…" autocomplete="off" />
+            <input
+              id="searchInput"
+              type="search"
+              placeholder="Job name, number, client or status…"
+              autocomplete="off"
+            />
           </label>
 
           <label class="field">
@@ -85,9 +122,11 @@
         <section class="table-panel">
           <div class="table-heading">
             <div>
+              <p class="eyebrow">Warehouse workflow</p>
               <h2>Upcoming jobs</h2>
               <p id="resultSummary">Enter the warehouse passphrase to load jobs.</p>
             </div>
+
             <div class="last-updated" id="lastUpdated">Not updated</div>
           </div>
 
@@ -105,6 +144,7 @@
                   <th><button type="button" data-sort="returnAt">Due back</button></th>
                 </tr>
               </thead>
+
               <tbody id="jobsBody"></tbody>
             </table>
           </div>
@@ -119,38 +159,53 @@
 
     <div class="login-overlay" id="loginOverlay">
       <form class="login-card" id="loginForm">
-        <div class="brand-mark large"><strong>WOLF</strong><span>Lighting</span></div>
+        <img
+          class="login-logo"
+          src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png"
+          alt="Wolf Lighting"
+        />
+
         <p class="eyebrow">Warehouse access</p>
         <h2>Open the warehouse schedule</h2>
         <p>Enter the private dashboard passphrase configured in Render.</p>
-        <label class="field">
+
+        <label class="field field-dark">
           <span>Dashboard passphrase</span>
           <input id="accessKeyInput" type="password" required autocomplete="current-password" />
         </label>
+
         <label class="remember-row">
           <input id="rememberKey" type="checkbox" />
           <span>Remember on this warehouse screen</span>
         </label>
+
         <p class="form-error" id="loginError" aria-live="polite"></p>
-        <button class="button button-primary button-wide" type="submit">Open dashboard</button>
+
+        <button class="button button-primary button-wide" type="submit">
+          Open dashboard
+        </button>
       </form>
     </div>
 
     <template id="jobRowTemplate">
       <tr>
         <td class="status-cell"><span class="status-pill"></span></td>
+
         <td class="job-cell">
           <a class="job-link" target="_blank" rel="noopener noreferrer">
             <strong class="job-reference"></strong>
             <span class="job-name"></span>
           </a>
         </td>
+
         <td class="client-cell optional-client"></td>
         <td class="items-cell number"></td>
+
         <td class="prepared-cell">
           <div class="prepared-copy"><strong></strong><span></span></div>
           <div class="progress-track"><span></span></div>
         </td>
+
         <td class="prep-cell date-cell"></td>
         <td class="load-cell date-cell"></td>
         <td class="return-cell date-cell"></td>
@@ -158,6 +213,7 @@
     </template>
 
     <script src="config.js"></script>
+    <script src="theme.js"></script>
     <script type="module" src="app.js"></script>
   </body>
 </html>
