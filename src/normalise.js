@@ -45,7 +45,6 @@ const EXCLUDED_ITEM_WORDS = [
   "delivery",
   "collection",
   "sale",
-  "text",
   "subtotal",
   "discount",
   "location"
@@ -135,14 +134,63 @@ function itemDescriptor(item) {
 
 function isPhysicalRentalItem(rawItem) {
   const item = unwrapRecord(rawItem);
+  const quantity = quantityForItem(item);
 
-  if (item.is_group === true || item.is_heading === true || item.group === true) return false;
-  if (item.is_service === true || item.is_labour === true || item.is_labor === true) return false;
-  if (item.is_transport === true || item.is_sale === true || item.is_text === true) return false;
+  /*
+   * Never count structural rows such as groups and headings.
+   */
+  if (
+    item.is_group === true ||
+    item.is_heading === true ||
+    item.group === true ||
+    item.opportunity_item_type_name === "Group"
+  ) {
+    return false;
+  }
+
+  /*
+   * Continue excluding services, labour, transport and sales.
+   */
+  if (
+    item.is_service === true ||
+    item.is_labour === true ||
+    item.is_labor === true ||
+    item.is_transport === true ||
+    item.is_sale === true
+  ) {
+    return false;
+  }
 
   const descriptor = itemDescriptor(item);
-  if (EXCLUDED_ITEM_WORDS.some((word) => descriptor.includes(word))) return false;
 
+  /*
+   * Exclude clearly non-equipment lines.
+   */
+  if (
+    EXCLUDED_ITEM_WORDS.some(
+      (word) => descriptor.includes(word)
+    )
+  ) {
+    return false;
+  }
+
+  /*
+   * Current RMS text items can be used for manually entered equipment.
+   *
+   * Count them when they have a positive quantity. This prevents
+   * ordinary notes and descriptive text rows from being counted.
+   */
+  const isTextItem =
+    item.is_text === true ||
+    descriptor.includes("text");
+
+  if (isTextItem) {
+    return quantity > 0;
+  }
+
+  /*
+   * Normal products, accessories and rental stock.
+   */
   if (
     item.is_item === true ||
     item.is_accessory === true ||
@@ -154,10 +202,14 @@ function isPhysicalRentalItem(rawItem) {
     descriptor.includes("accessory") ||
     descriptor.includes("stock")
   ) {
-    return true;
+    return quantity > 0;
   }
 
-  return quantityForItem(item) > 0;
+  /*
+   * As a fallback, count any remaining opportunity line that has
+   * a positive quantity and is not one of the excluded line types.
+   */
+  return quantity > 0;
 }
 
 function quantityForItem(item) {
