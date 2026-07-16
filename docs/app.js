@@ -159,14 +159,6 @@ async function fetchJobs({
       ? payload.jobs
       : [];
 
-console.table(
-  state.jobs.map((job) => ({
-    reference: job.reference,
-    state: job.opportunityState,
-    status: job.opportunityStatus
-  }))
-);
-
     setConnection(
       "live",
       payload.mode === "mock"
