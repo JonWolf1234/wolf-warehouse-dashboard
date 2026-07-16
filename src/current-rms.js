@@ -92,21 +92,58 @@ async function currentRequest(path, params = {}) {
   }
 }
 
-function totalPagesFrom(payload, currentPage, resultLength, perPage) {
-  const candidates = [
-    payload?.meta?.total_pages,
-    payload?.meta?.pagination?.total_pages,
-    payload?.pagination?.total_pages,
+function paginationInformation(payload, currentPage, resultLength) {
+  const totalRowCount = Number(
+    payload?.meta?.total_row_count ??
+    payload?.meta?.pagination?.total_row_count ??
+    payload?.pagination?.total_row_count ??
+    payload?.total_row_count
+  );
+
+  const declaredTotalPages = Number(
+    payload?.meta?.total_pages ??
+    payload?.meta?.pagination?.total_pages ??
+    payload?.pagination?.total_pages ??
     payload?.total_pages
-  ];
+  );
 
-  const declared = candidates.map(Number).find(Number.isFinite);
+  const declaredPerPage = Number(
+    payload?.meta?.per_page ??
+    payload?.meta?.pagination?.per_page ??
+    payload?.pagination?.per_page ??
+    payload?.per_page
+  );
 
-  if (declared) {
-    return declared;
+  const actualPageSize =
+    Number.isFinite(declaredPerPage) && declaredPerPage > 0
+      ? declaredPerPage
+      : resultLength;
+
+  let totalPages = null;
+
+  if (
+    Number.isFinite(declaredTotalPages) &&
+    declaredTotalPages > 0
+  ) {
+    totalPages = declaredTotalPages;
+  } else if (
+    Number.isFinite(totalRowCount) &&
+    totalRowCount >= 0 &&
+    actualPageSize > 0
+  ) {
+    totalPages = Math.ceil(
+      totalRowCount / actualPageSize
+    );
   }
 
-  return resultLength < perPage ? currentPage : currentPage + 1;
+  return {
+    currentPage,
+    totalPages,
+    totalRowCount: Number.isFinite(totalRowCount)
+      ? totalRowCount
+      : null,
+    actualPageSize
+  };
 }
 
 async function fetchPaginated(
@@ -115,31 +152,93 @@ async function fetchPaginated(
   preferredKeys,
   maximumRecords = 1000
 ) {
-  const perPage = 100;
+  const requestedPerPage = 100;
   const all = [];
+  const seenIds = new Set();
 
-  for (let page = 1; page <= 20; page += 1) {
+  for (let page = 1; page <= 100; page += 1) {
     const payload = await currentRequest(path, {
       ...params,
       page,
-      per_page: perPage
+      per_page: requestedPerPage
     });
 
-    const records = extractCollection(payload, preferredKeys);
-
-    all.push(...records);
-
-    const totalPages = totalPagesFrom(
+    const records = extractCollection(
       payload,
-      page,
-      records.length,
-      perPage
+      preferredKeys
     );
 
+    let newRecordsOnPage = 0;
+
+    for (const record of records) {
+      const recordId =
+        record?.id ??
+        record?.opportunity_id ??
+        record?.opportunity_item_id;
+
+      /*
+       * Prevent a repeated API page from creating an infinite loop.
+       */
+      if (
+        recordId !== undefined &&
+        recordId !== null
+      ) {
+        const uniqueKey = String(recordId);
+
+        if (seenIds.has(uniqueKey)) {
+          continue;
+        }
+
+        seenIds.add(uniqueKey);
+      }
+
+      all.push(record);
+      newRecordsOnPage += 1;
+
+      if (all.length >= maximumRecords) {
+        break;
+      }
+    }
+
+    const pagination = paginationInformation(
+      payload,
+      page,
+      records.length
+    );
+
+    console.log(
+      `[Current RMS] page=${page} ` +
+      `received=${records.length} ` +
+      `new=${newRecordsOnPage} ` +
+      `totalLoaded=${all.length} ` +
+      `totalAvailable=${pagination.totalRowCount ?? "unknown"}`
+    );
+
+    if (all.length >= maximumRecords) {
+      break;
+    }
+
+    if (records.length === 0) {
+      break;
+    }
+
+    if (newRecordsOnPage === 0) {
+      /*
+       * The API returned the same page again, so stop safely.
+       */
+      break;
+    }
+
     if (
-      page >= totalPages ||
-      records.length < perPage ||
-      all.length >= maximumRecords
+      pagination.totalPages !== null &&
+      page >= pagination.totalPages
+    ) {
+      break;
+    }
+
+    if (
+      pagination.totalRowCount !== null &&
+      all.length >= pagination.totalRowCount
     ) {
       break;
     }
@@ -175,9 +274,10 @@ async function listOpportunities(fromDate) {
   try {
     return await fetchPaginated(
       "/opportunities",
-      {
-        "q[ends_at_gteq]": broadFrom
-      },
+{
+  "q[ends_at_gteq]": broadFrom,
+  "q[s][]": "id asc"
+},
       ["opportunities"],
       maximumRecords
     );
@@ -197,11 +297,13 @@ async function listOpportunities(fromDate) {
     );
 
     return fetchPaginated(
-      "/opportunities",
-      {},
-      ["opportunities"],
-      maximumRecords
-    );
+  "/opportunities",
+  {
+    "q[s][]": "id asc"
+  },
+  ["opportunities"],
+  maximumRecords
+);
   }
 }
 
