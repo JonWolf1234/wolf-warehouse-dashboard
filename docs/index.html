@@ -4,15 +4,21 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta id="themeColorMeta" name="theme-color" content="#0b0d0f" />
+
     <title>Wolf Warehouse Schedule</title>
 
     <script>
       (() => {
         const savedTheme = localStorage.getItem("warehouseTheme");
-        const preferredTheme = window.matchMedia("(prefers-color-scheme: light)").matches
+
+        const preferredTheme = window.matchMedia(
+          "(prefers-color-scheme: light)"
+        ).matches
           ? "light"
           : "dark";
-        document.documentElement.dataset.theme = savedTheme || preferredTheme;
+
+        document.documentElement.dataset.theme =
+          savedTheme || preferredTheme;
       })();
     </script>
 
@@ -27,7 +33,11 @@
           <h1 id="screenTitle">Warehouse Schedule</h1>
         </div>
 
-        <a class="header-logo" href="#dashboard" aria-label="Wolf Lighting warehouse dashboard">
+        <a
+          class="header-logo"
+          href="#dashboard"
+          aria-label="Wolf Lighting warehouse dashboard"
+        >
           <img
             src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png"
             alt="Wolf Lighting"
@@ -35,21 +45,45 @@
         </a>
 
         <div class="topbar-actions">
-          <div class="connection-state" id="connectionState" aria-live="polite">
+          <div
+            class="connection-state"
+            id="connectionState"
+            aria-live="polite"
+          >
             <span class="state-dot" aria-hidden="true"></span>
             <span>Not connected</span>
           </div>
 
-          <button class="button button-header" id="themeToggle" type="button" aria-pressed="false">
-            <span class="theme-icon" id="themeIcon" aria-hidden="true">☀</span>
+          <button
+            class="button button-header"
+            id="themeToggle"
+            type="button"
+            aria-pressed="false"
+          >
+            <span
+              class="theme-icon"
+              id="themeIcon"
+              aria-hidden="true"
+            >
+              ☀
+            </span>
+
             <span id="themeLabel">Light mode</span>
           </button>
 
-          <button class="button button-header button-fullscreen" id="fullscreenButton" type="button">
+          <button
+            class="button button-header button-fullscreen"
+            id="fullscreenButton"
+            type="button"
+          >
             Full screen
           </button>
 
-          <button class="button button-primary" id="refreshButton" type="button">
+          <button
+            class="button button-primary"
+            id="refreshButton"
+            type="button"
+          >
             Refresh
           </button>
         </div>
@@ -58,7 +92,10 @@
 
     <div class="app-shell" id="dashboard">
       <main>
-        <section class="metrics-grid" aria-label="Warehouse totals">
+        <section
+          class="metrics-grid"
+          aria-label="Warehouse totals"
+        >
           <article class="metric-card metric-jobs">
             <span>Jobs shown</span>
             <strong id="jobsMetric">0</strong>
@@ -80,96 +117,215 @@
           </article>
         </section>
 
-        <section class="controls-panel" aria-label="Search and date filters">
-          <label class="field field-search">
-            <span>Search</span>
-            <input
-              id="searchInput"
-              type="search"
-              placeholder="Job name, number, client or status…"
-              autocomplete="off"
-            />
-          </label>
+<section
+  class="controls-panel"
+  aria-label="Search and date filters"
+>
+  <div class="filter-toolbar">
 
-          <label class="field">
-            <span>Date type</span>
-            <select id="dateTypeSelect">
-              <option value="all">Any job date</option>
-              <option value="prepAt">Prep date</option>
-              <option value="loadAt">Load-out date</option>
-              <option value="returnAt">Due-back date</option>
-            </select>
-          </label>
+    <div class="filter-field filter-search">
+      <label for="searchInput">Search</label>
 
-          <div class="filter-group">
-            <label for="opportunityTypeFilter">
-              Job status
-            </label>
+      <input
+        id="searchInput"
+        type="search"
+        placeholder="Job name, number, client or status…"
+        autocomplete="off"
+      />
+    </div>
 
-                <select id="opportunityTypeFilter">
-                  <option value="all">
-                    All
-                  </option>
+    <div class="filter-field filter-select">
+      <label for="opportunityTypeFilter">
+        Job type
+      </label>
 
-                  <option value="orders" selected>
-                    Orders Only
-                  </option>
+      <select id="opportunityTypeFilter">
+        <option value="all">
+          All
+        </option>
 
-                  <option value="quotes">
-                    Quotes Only
-                  </option>
+        <option value="orders" selected>
+          Orders Only
+        </option>
 
-                  <option value="provisional">
-                    Provisional Only
-                  </option>
+        <option value="quotes">
+          Quotes Only
+        </option>
 
-                  <option value="booked-out">
-                    Booked Out
-                  </option>
-                </select>
-          </div>
+        <option value="provisional">
+          Provisional Only
+        </option>
 
-          <label class="field">
-            <span>From</span>
-            <input id="fromDate" type="date" />
-          </label>
+        <option value="booked-out">
+          Booked Out
+        </option>
+      </select>
+    </div>
 
-          <label class="field">
-            <span>To</span>
-            <input id="toDate" type="date" />
-          </label>
+    <div class="filter-field filter-select">
+      <label for="dateTypeSelect">
+        Date type
+      </label>
 
-          <div class="quick-ranges" aria-label="Quick date ranges">
-            <button type="button" data-range="today">Today</button>
-            <button type="button" data-range="7">7 days</button>
-            <button type="button" data-range="14">14 days</button>
-            <button type="button" data-range="30">30 days</button>
-          </div>
-        </section>
+      <select id="dateTypeSelect">
+        <option value="all">
+          Any job date
+        </option>
+
+        <option value="prepAt">
+          Prep date
+        </option>
+
+        <option value="loadAt">
+          Load-out date
+        </option>
+
+        <option value="returnAt">
+          Due-back date
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-field filter-date">
+      <label for="fromDate">From</label>
+
+      <input
+        id="fromDate"
+        type="date"
+      />
+    </div>
+
+    <div class="filter-field filter-date">
+      <label for="toDate">To</label>
+
+      <input
+        id="toDate"
+        type="date"
+      />
+    </div>
+
+    <div class="filter-field filter-ranges">
+      <label>Quick range</label>
+
+      <div
+        class="range-buttons"
+        aria-label="Quick date ranges"
+      >
+        <button type="button" data-range="today">
+          Today
+        </button>
+
+        <button type="button" data-range="7">
+          7 days
+        </button>
+
+        <button type="button" data-range="14">
+          14 days
+        </button>
+
+        <button type="button" data-range="30">
+          30 days
+        </button>
+      </div>
+    </div>
+
+  </div>
+</section>
 
         <section class="table-panel">
           <div class="table-heading">
             <div>
               <p class="eyebrow">Warehouse workflow</p>
               <h2>Upcoming jobs</h2>
-              <p id="resultSummary">Enter the warehouse passphrase to load jobs.</p>
+
+              <p id="resultSummary">
+                Enter the warehouse passphrase to load jobs.
+              </p>
             </div>
 
-            <div class="last-updated" id="lastUpdated">Not updated</div>
+            <div
+              class="last-updated"
+              id="lastUpdated"
+            >
+              Not updated
+            </div>
           </div>
 
           <div class="table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th><button type="button" data-sort="statusRank">Status</button></th>
-                  <th><button type="button" data-sort="reference">Job</button></th>
-                  <th class="optional-client"><button type="button" data-sort="customer">Client</button></th>
-                  <th class="number"><button type="button" data-sort="totalItems">Items</button></th>
-                  <th><button type="button" data-sort="preparedPercent">Prepared</button></th>
-                  <th><button type="button" data-sort="prepAt">Prep date</button></th>
-                  <th><button type="button" data-sort="loadAt">Load-out</button></th>
-                  <th><button type="button" data-sort="returnAt">Due back</button></th>
+                  <th>
+                    <button
+                      type="button"
+                      data-sort="statusRank"
+                    >
+                      Status
+                    </button>
+                  </th>
+
+                  <th>
+                    <button
+                      type="button"
+                      data-sort="reference"
+                    >
+                      Job
+                    </button>
+                  </th>
+
+                  <th class="optional-client">
+                    <button
+                      type="button"
+                      data-sort="customer"
+                    >
+                      Client
+                    </button>
+                  </th>
+
+                  <th class="number">
+                    <button
+                      type="button"
+                      data-sort="totalItems"
+                    >
+                      Items
+                    </button>
+                  </th>
+
+                  <th>
+                    <button
+                      type="button"
+                      data-sort="preparedPercent"
+                    >
+                      Prepared
+                    </button>
+                  </th>
+
+                  <th>
+                    <button
+                      type="button"
+                      data-sort="prepAt"
+                    >
+                      Prep date
+                    </button>
+                  </th>
+
+                  <th>
+                    <button
+                      type="button"
+                      data-sort="loadAt"
+                    >
+                      Load-out
+                    </button>
+                  </th>
+
+                  <th>
+                    <button
+                      type="button"
+                      data-sort="returnAt"
+                    >
+                      Due back
+                    </button>
+                  </th>
                 </tr>
               </thead>
 
@@ -177,39 +333,83 @@
             </table>
           </div>
 
-          <div class="empty-state" id="emptyState" hidden>
-            <strong>No jobs match these filters.</strong>
-            <span>Try a wider date range or clear the search box.</span>
+          <div
+            class="empty-state"
+            id="emptyState"
+            hidden
+          >
+            <strong>
+              No jobs match these filters.
+            </strong>
+
+            <span>
+              Try a wider date range or clear the search box.
+            </span>
           </div>
         </section>
       </main>
     </div>
 
-    <div class="login-overlay" id="loginOverlay">
-      <form class="login-card" id="loginForm">
+    <div
+      class="login-overlay"
+      id="loginOverlay"
+    >
+      <form
+        class="login-card"
+        id="loginForm"
+      >
         <img
           class="login-logo"
           src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png"
           alt="Wolf Lighting"
         />
 
-        <p class="eyebrow">Warehouse access</p>
-        <h2>Open the warehouse schedule</h2>
-        <p>Enter the private dashboard passphrase configured in Render.</p>
+        <p class="eyebrow">
+          Warehouse access
+        </p>
+
+        <h2>
+          Open the warehouse schedule
+        </h2>
+
+        <p>
+          Enter the private dashboard passphrase configured in Render.
+        </p>
 
         <label class="field field-dark">
-          <span>Dashboard passphrase</span>
-          <input id="accessKeyInput" type="password" required autocomplete="current-password" />
+          <span>
+            Dashboard passphrase
+          </span>
+
+          <input
+            id="accessKeyInput"
+            type="password"
+            required
+            autocomplete="current-password"
+          />
         </label>
 
         <label class="remember-row">
-          <input id="rememberKey" type="checkbox" />
-          <span>Remember on this warehouse screen</span>
+          <input
+            id="rememberKey"
+            type="checkbox"
+          />
+
+          <span>
+            Remember on this warehouse screen
+          </span>
         </label>
 
-        <p class="form-error" id="loginError" aria-live="polite"></p>
+        <p
+          class="form-error"
+          id="loginError"
+          aria-live="polite"
+        ></p>
 
-        <button class="button button-primary button-wide" type="submit">
+        <button
+          class="button button-primary button-wide"
+          type="submit"
+        >
           Open dashboard
         </button>
       </form>
@@ -217,21 +417,34 @@
 
     <template id="jobRowTemplate">
       <tr>
-        <td class="status-cell"><span class="status-pill"></span></td>
+        <td class="status-cell">
+          <span class="status-pill"></span>
+        </td>
 
         <td class="job-cell">
-          <a class="job-link" target="_blank" rel="noopener noreferrer">
+          <a
+            class="job-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <strong class="job-reference"></strong>
             <span class="job-name"></span>
           </a>
         </td>
 
         <td class="client-cell optional-client"></td>
+
         <td class="items-cell number"></td>
 
         <td class="prepared-cell">
-          <div class="prepared-copy"><strong></strong><span></span></div>
-          <div class="progress-track"><span></span></div>
+          <div class="prepared-copy">
+            <strong></strong>
+            <span></span>
+          </div>
+
+          <div class="progress-track">
+            <span></span>
+          </div>
         </td>
 
         <td class="prep-cell date-cell"></td>
@@ -244,4 +457,4 @@
     <script src="theme.js"></script>
     <script type="module" src="app.js"></script>
   </body>
-</html>
+</html> 

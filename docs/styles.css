@@ -1430,3 +1430,238 @@ tr.is-mapping .progress-track span {
 :fullscreen body {
   background: var(--bg);
 }
+
+/* =========================================================
+   WAREHOUSE FILTER TOOLBAR — FINAL OVERRIDES
+   ========================================================= */
+
+.controls-panel {
+  display: block;
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 16px;
+
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.filter-toolbar {
+  display: grid;
+
+  grid-template-columns:
+    minmax(220px, 1.2fr)
+    minmax(150px, 0.72fr)
+    minmax(150px, 0.72fr)
+    minmax(145px, 0.66fr)
+    minmax(145px, 0.66fr)
+    auto;
+
+  align-items: end;
+  gap: 12px;
+
+  width: 100%;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+
+  min-width: 0;
+}
+
+.filter-field label {
+  display: block;
+  margin: 0;
+
+  color: var(--muted);
+
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.filter-toolbar input,
+.filter-toolbar select {
+  display: block;
+
+  width: 100%;
+  height: 44px;
+
+  margin: 0;
+  padding: 0 12px;
+
+  border: 1px solid var(--line);
+  border-radius: 11px;
+
+  background-color: var(--input-bg);
+  color: var(--text);
+
+  font-family: inherit;
+  font-size: 0.88rem;
+
+  outline: none;
+}
+
+.filter-toolbar input::placeholder {
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+.filter-toolbar input:focus,
+.filter-toolbar select:focus {
+  border-color: var(--green);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(66, 211, 124, 0.1);
+}
+
+.filter-toolbar select {
+  cursor: pointer;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  padding-right: 34px;
+
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent 50%,
+      var(--muted) 50%
+    ),
+    linear-gradient(
+      135deg,
+      var(--muted) 50%,
+      transparent 50%
+    );
+
+  background-position:
+    calc(100% - 16px) 18px,
+    calc(100% - 11px) 18px;
+
+  background-size:
+    5px 5px,
+    5px 5px;
+
+  background-repeat: no-repeat;
+}
+
+.filter-toolbar input[type="date"] {
+  padding-right: 7px;
+}
+
+.filter-ranges {
+  min-width: max-content;
+}
+
+.range-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  height: 44px;
+
+  white-space: nowrap;
+}
+
+.range-buttons button {
+  height: 44px;
+
+  margin: 0;
+  padding: 0 11px;
+
+  border: 1px solid var(--line);
+  border-radius: 9px;
+
+  background: var(--input-bg);
+  color: var(--muted);
+
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+
+  white-space: nowrap;
+
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.range-buttons button:hover {
+  border-color: var(--green);
+  background: var(--panel-raised);
+  color: var(--text);
+}
+
+@media (max-width: 1300px) {
+  .filter-toolbar {
+    grid-template-columns:
+      minmax(190px, 1fr)
+      minmax(140px, 0.7fr)
+      minmax(140px, 0.7fr)
+      minmax(135px, 0.62fr)
+      minmax(135px, 0.62fr)
+      auto;
+
+    gap: 9px;
+  }
+
+  .range-buttons button {
+    padding-inline: 8px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 1120px) {
+  .filter-toolbar {
+    grid-template-columns:
+      minmax(200px, 1fr)
+      minmax(145px, 0.75fr)
+      minmax(145px, 0.75fr)
+      minmax(140px, 0.65fr)
+      minmax(140px, 0.65fr);
+  }
+
+  .filter-ranges {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .filter-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .filter-search,
+  .filter-ranges {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .filter-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-search,
+  .filter-ranges {
+    grid-column: auto;
+  }
+
+  .range-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+
+    width: 100%;
+    height: auto;
+  }
+}
