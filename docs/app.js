@@ -128,19 +128,59 @@ function formatUpdatedTime(value) {
 }
 
 function dateValue(job, key) {
-  if (key === "all") return [job.prepAt, job.loadAt, job.returnAt].filter(Boolean);
+  if (key === "all") {
+    return [
+      job.prepAt,
+      job.prepEndsAt,
+      job.loadAt,
+      job.loadEndsAt,
+      job.deliverAt,
+      job.showAt,
+      job.returnAt,
+      job.returnEndsAt
+    ].filter(Boolean);
+  }
+
   return job[key] ? [job[key]] : [];
 }
 
 function withinSelectedDates(job) {
-  const values = dateValue(job, elements.dateTypeSelect.value);
-  if (!values.length) return false;
-  const from = new Date(`${elements.fromDate.value}T00:00:00`).getTime();
-  const to = new Date(`${elements.toDate.value}T23:59:59`).getTime();
-  return values.some((value) => {
-    const time = new Date(value).getTime();
-    return Number.isFinite(time) && time >= from && time <= to;
-  });
+  const selectedType = elements.dateTypeSelect.value;
+  const values = dateValue(job, selectedType)
+    .map((value) => new Date(value).getTime())
+    .filter(Number.isFinite);
+
+  if (!values.length) {
+    return false;
+  }
+
+  const from = new Date(
+    `${elements.fromDate.value}T00:00:00`
+  ).getTime();
+
+  const to = new Date(
+    `${elements.toDate.value}T23:59:59`
+  ).getTime();
+
+  /*
+   * For a specific date column, check whether that exact date
+   * falls inside the selected range.
+   */
+  if (selectedType !== "all") {
+    return values.some(
+      (time) => time >= from && time <= to
+    );
+  }
+
+  /*
+   * For "Any job date", treat the dates as an overall job period.
+   * This means a job is shown even when it starts before the selected
+   * range but remains active during it.
+   */
+  const jobStartsAt = Math.min(...values);
+  const jobEndsAt = Math.max(...values);
+
+  return jobStartsAt <= to && jobEndsAt >= from;
 }
 
 function matchesSearch(job) {

@@ -389,15 +389,36 @@ export function opportunityLooksLikeOrder(rawOpportunity) {
 }
 
 export function isRelevantToDateRange(job, fromDate, toDate) {
-  const from = new Date(`${fromDate}T00:00:00Z`).getTime();
-  const to = new Date(`${toDate}T23:59:59Z`).getTime();
-  const values = [job.prepAt, job.loadAt, job.deliverAt, job.showAt, job.returnAt]
+  const from = new Date(
+    `${fromDate}T00:00:00Z`
+  ).getTime();
+
+  const to = new Date(
+    `${toDate}T23:59:59Z`
+  ).getTime();
+
+  const values = [
+    job.prepAt,
+    job.prepEndsAt,
+    job.loadAt,
+    job.loadEndsAt,
+    job.deliverAt,
+    job.showAt,
+    job.returnAt,
+    job.returnEndsAt
+  ]
     .filter(Boolean)
     .map((value) => new Date(value).getTime())
     .filter(Number.isFinite);
 
-  if (!values.length) return false;
-  return values.some((time) => time >= from && time <= to);
+  if (!values.length) {
+    return false;
+  }
+
+  const jobStartsAt = Math.min(...values);
+  const jobEndsAt = Math.max(...values);
+
+  return jobStartsAt <= to && jobEndsAt >= from;
 }
 
 export function diagnosticSummary(rawOpportunity, separatelyFetchedItems = []) {
