@@ -101,6 +101,34 @@
             </select>
           </label>
 
+          <div class="filter-group">
+            <label for="opportunityTypeFilter">
+              Job status
+            </label>
+
+                <select id="opportunityTypeFilter">
+                  <option value="all">
+                    All
+                  </option>
+
+                  <option value="orders" selected>
+                    Orders Only
+                  </option>
+
+                  <option value="quotes">
+                    Quotes Only
+                  </option>
+
+                  <option value="provisional">
+                    Provisional Only
+                  </option>
+
+                  <option value="booked-out">
+                    Booked Out
+                  </option>
+                </select>
+          </div>
+
           <label class="field">
             <span>From</span>
             <input id="fromDate" type="date" />
