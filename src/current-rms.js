@@ -5,7 +5,7 @@ import {
   isRelevantToDateRange,
   normaliseOpportunity,
   opportunityLooksActive,
-  opportunityLooksLikeOrder
+  scheduleDates
 } from "./normalise.js";
 
 const API_BASE = "https://api.current-rms.com/api/v1";
@@ -18,17 +18,24 @@ function envNumber(name, fallback) {
 function requiredConfiguration() {
   const subdomain = process.env.CURRENT_RMS_SUBDOMAIN?.trim();
   const apiKey = process.env.CURRENT_RMS_API_KEY?.trim();
+
   if (!subdomain || !apiKey) {
-    throw new Error("CURRENT_RMS_SUBDOMAIN and CURRENT_RMS_API_KEY must be configured.");
+    throw new Error(
+      "CURRENT_RMS_SUBDOMAIN and CURRENT_RMS_API_KEY must be configured."
+    );
   }
+
   return { subdomain, apiKey };
 }
 
 function appendParams(url, params = {}) {
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === "") continue;
+
     if (Array.isArray(value)) {
-      for (const item of value) url.searchParams.append(key, item);
+      for (const item of value) {
+        url.searchParams.append(key, item);
+      }
     } else {
       url.searchParams.set(key, String(value));
     }
@@ -37,6 +44,7 @@ function appendParams(url, params = {}) {
 
 async function currentRequest(path, params = {}) {
   const { subdomain, apiKey } = requiredConfiguration();
+
   const url = new URL(`${API_BASE}${path}`);
   appendParams(url, params);
 
@@ -55,7 +63,9 @@ async function currentRequest(path, params = {}) {
     });
 
     const text = await response.text();
+
     let payload;
+
     try {
       payload = text ? JSON.parse(text) : {};
     } catch {
@@ -68,9 +78,11 @@ async function currentRequest(path, params = {}) {
         payload?.error ||
         payload?.errors?.join?.(", ") ||
         `Current RMS returned HTTP ${response.status}`;
+
       const error = new Error(message);
       error.status = response.status;
       error.payload = payload;
+
       throw error;
     }
 
@@ -87,22 +99,50 @@ function totalPagesFrom(payload, currentPage, resultLength, perPage) {
     payload?.pagination?.total_pages,
     payload?.total_pages
   ];
+
   const declared = candidates.map(Number).find(Number.isFinite);
-  if (declared) return declared;
+
+  if (declared) {
+    return declared;
+  }
+
   return resultLength < perPage ? currentPage : currentPage + 1;
 }
 
-async function fetchPaginated(path, params, preferredKeys, maximumRecords = 500) {
+async function fetchPaginated(
+  path,
+  params,
+  preferredKeys,
+  maximumRecords = 1000
+) {
   const perPage = 100;
   const all = [];
 
-  for (let page = 1; page <= 10; page += 1) {
-    const payload = await currentRequest(path, { ...params, page, per_page: perPage });
+  for (let page = 1; page <= 20; page += 1) {
+    const payload = await currentRequest(path, {
+      ...params,
+      page,
+      per_page: perPage
+    });
+
     const records = extractCollection(payload, preferredKeys);
+
     all.push(...records);
 
-    const totalPages = totalPagesFrom(payload, page, records.length, perPage);
-    if (page >= totalPages || records.length < perPage || all.length >= maximumRecords) break;
+    const totalPages = totalPagesFrom(
+      payload,
+      page,
+      records.length,
+      perPage
+    );
+
+    if (
+      page >= totalPages ||
+      records.length < perPage ||
+      all.length >= maximumRecords
+    ) {
+      break;
+    }
   }
 
   return all.slice(0, maximumRecords);
@@ -110,83 +150,247 @@ async function fetchPaginated(path, params, preferredKeys, maximumRecords = 500)
 
 function addDays(dateString, numberOfDays) {
   const date = new Date(`${dateString}T00:00:00Z`);
+
   date.setUTCDate(date.getUTCDate() + numberOfDays);
+
   return date.toISOString();
 }
 
-async function listOpportunities(fromDate, toDate) {
-  const maximumRecords = envNumber("MAX_LIST_RECORDS", 500);
-  const broadFrom = addDays(fromDate, -30);
-  const broadTo = addDays(toDate, 30);
+async function listOpportunities(fromDate) {
+  const maximumRecords = envNumber("MAX_LIST_RECORDS", 1000);
 
-  const filteredParams = {
-    "q[ends_at_gteq]": broadFrom,
-    "q[starts_at_lteq]": broadTo
-  };
+  /*
+   * Include opportunities whose end date is no more than 30 days before
+   * the selected dashboard start date.
+   *
+   * This includes:
+   * - Upcoming quotations
+   * - Upcoming provisional jobs
+   * - Confirmed orders
+   * - Jobs currently being prepared
+   * - Jobs currently booked out
+   */
+  const broadFrom = addDays(fromDate, -30);
 
   try {
-    return await fetchPaginated("/opportunities", filteredParams, ["opportunities"], maximumRecords);
+    return await fetchPaginated(
+      "/opportunities",
+      {
+        "q[ends_at_gteq]": broadFrom
+      },
+      ["opportunities"],
+      maximumRecords
+    );
   } catch (error) {
-    // Current RMS has changed the Opportunities API response in v2.1. If a tenant
-    // rejects an older filter, retry with the stable pagination parameters only.
-    if (![400, 422].includes(error.status)) throw error;
-    return fetchPaginated("/opportunities", {}, ["opportunities"], maximumRecords);
+    if (![400, 422].includes(error.status)) {
+      throw error;
+    }
+
+    /*
+     * Some Current RMS accounts reject the date filter.
+     * If that happens, retrieve the active opportunity list and perform
+     * all date filtering inside this application.
+     */
+    console.warn(
+      `[Current RMS] Date filter was rejected (${error.status}); ` +
+        "retrying without it."
+    );
+
+    return fetchPaginated(
+      "/opportunities",
+      {},
+      ["opportunities"],
+      maximumRecords
+    );
   }
 }
 
+function validTimestamp(value) {
+  if (!value) return null;
+
+  const timestamp = new Date(value).getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function summaryRange(opportunity) {
+  const dates = scheduleDates(opportunity);
+
+  const startValues = [
+    dates.prepAt,
+    dates.loadAt,
+    dates.deliverAt,
+    dates.showAt,
+    opportunity?.starts_at,
+    opportunity?.start_at
+  ]
+    .map(validTimestamp)
+    .filter((value) => value !== null);
+
+  const endValues = [
+    dates.returnAt,
+    dates.returnEndsAt,
+    opportunity?.ends_at,
+    opportunity?.end_at
+  ]
+    .map(validTimestamp)
+    .filter((value) => value !== null);
+
+  const allValues = [...startValues, ...endValues];
+
+  if (!allValues.length) {
+    return {
+      hasDates: false,
+      start: Number.POSITIVE_INFINITY,
+      end: Number.POSITIVE_INFINITY
+    };
+  }
+
+  return {
+    hasDates: true,
+
+    start: startValues.length
+      ? Math.min(...startValues)
+      : Math.min(...allValues),
+
+    end: endValues.length
+      ? Math.max(...endValues)
+      : Math.max(...allValues)
+  };
+}
+
+function summaryOverlapsDateRange(opportunity, fromDate, toDate) {
+  const range = summaryRange(opportunity);
+
+  /*
+   * If the summary record contains no dates, keep it as a candidate.
+   * The full opportunity record may contain prep and load dates that
+   * are not included in the summary response.
+   */
+  if (!range.hasDates) {
+    return true;
+  }
+
+  const from = new Date(`${fromDate}T00:00:00Z`).getTime();
+  const to = new Date(`${toDate}T23:59:59Z`).getTime();
+
+  /*
+   * Include any opportunity whose overall period overlaps the selected
+   * dashboard date range.
+   */
+  return range.end >= from && range.start <= to;
+}
+
+function summarySortValue(opportunity) {
+  const range = summaryRange(opportunity);
+
+  return range.start;
+}
+
 async function retrieveOpportunity(id) {
+  /*
+   * Different Current RMS accounts/API versions accept different
+   * include values, so try several combinations.
+   */
   const includeAttempts = [
     ["opportunity_items", "opportunity_item_assets", "customer"],
+    ["opportunity_items", "customer"],
     ["opportunity_items"],
     []
   ];
 
   let lastError;
+
   for (const includes of includeAttempts) {
     try {
-      const payload = await currentRequest(`/opportunities/${id}`, {
-        "include[]": includes
-      });
+      const payload = await currentRequest(
+        `/opportunities/${id}`,
+        {
+          "include[]": includes
+        }
+      );
+
       return extractSingle(payload, ["opportunity"]);
     } catch (error) {
       lastError = error;
-      if (![400, 404, 422].includes(error.status)) throw error;
+
+      if (![400, 404, 422].includes(error.status)) {
+        throw error;
+      }
     }
   }
+
   throw lastError;
 }
 
 async function retrieveOpportunityItems(opportunityId) {
+  /*
+   * Try both possible routes for obtaining opportunity items.
+   */
   const routeAttempts = [
     `/opportunities/${opportunityId}/opportunity_items`,
-    `/opportunity_items`
+    "/opportunity_items"
   ];
 
   for (const route of routeAttempts) {
     try {
-      const params = route === "/opportunity_items" ? { "q[opportunity_id_eq]": opportunityId } : {};
-      const items = await fetchPaginated(route, params, ["opportunity_items"], 1000);
-      if (items.length) return items;
+      const params =
+        route === "/opportunity_items"
+          ? {
+              "q[opportunity_id_eq]": opportunityId
+            }
+          : {};
+
+      const items = await fetchPaginated(
+        route,
+        params,
+        ["opportunity_items"],
+        1000
+      );
+
+      if (items.length) {
+        return items;
+      }
     } catch (error) {
-      if (![400, 404, 422].includes(error.status)) throw error;
+      if (![400, 404, 422].includes(error.status)) {
+        throw error;
+      }
     }
   }
+
   return [];
 }
 
 async function mapWithConcurrency(values, limit, mapper) {
   const results = new Array(values.length);
+
   let nextIndex = 0;
 
   async function worker() {
     while (nextIndex < values.length) {
       const index = nextIndex;
+
       nextIndex += 1;
-      results[index] = await mapper(values[index], index);
+
+      results[index] = await mapper(
+        values[index],
+        index
+      );
     }
   }
 
-  await Promise.all(Array.from({ length: Math.min(limit, values.length) }, () => worker()));
+  const workerCount = Math.min(
+    limit,
+    values.length
+  );
+
+  await Promise.all(
+    Array.from(
+      { length: workerCount },
+      () => worker()
+    )
+  );
+
   return results;
 }
 
@@ -199,41 +403,194 @@ function hasEmbeddedItems(opportunity) {
   ].some(Array.isArray);
 }
 
-export async function getWarehouseJobs({ fromDate, toDate }) {
-  const { subdomain } = requiredConfiguration();
-  const maximum = envNumber("MAX_OPPORTUNITIES", 45);
-  const includeCustomerName = String(process.env.INCLUDE_CUSTOMER_NAME ?? "true") === "true";
+function jobSortValue(job) {
+  const value =
+    job.prepAt ||
+    job.loadAt ||
+    job.deliverAt ||
+    job.showAt ||
+    job.returnAt;
 
-  const list = await listOpportunities(fromDate, toDate);
-  const candidates = list
-    .filter(opportunityLooksActive)
-    .filter(opportunityLooksLikeOrder)
-    .slice(0, maximum);
+  const timestamp = validTimestamp(value);
 
-  const jobs = await mapWithConcurrency(candidates, 4, async (summary) => {
-    const id = summary.id || summary.opportunity_id;
-    if (!id) return null;
-
-    const detail = await retrieveOpportunity(id);
-    let items = [];
-    if (!hasEmbeddedItems(detail)) {
-      items = await retrieveOpportunityItems(id);
-    }
-
-    return normaliseOpportunity(detail, items, {
-      subdomain,
-      includeCustomerName
-    });
-  });
-
-  return jobs
-    .filter(Boolean)
-    .filter((job) => isRelevantToDateRange(job, fromDate, toDate))
-    .sort((a, b) => new Date(a.prepAt || a.loadAt || a.showAt) - new Date(b.prepAt || b.loadAt || b.showAt));
+  return timestamp ?? Number.POSITIVE_INFINITY;
 }
 
-export async function getOpportunityDiagnostics(opportunityId) {
-  const detail = await retrieveOpportunity(opportunityId);
-  const items = hasEmbeddedItems(detail) ? [] : await retrieveOpportunityItems(opportunityId);
-  return diagnosticSummary(detail, items);
+export async function getWarehouseJobs({
+  fromDate,
+  toDate
+}) {
+  const { subdomain } = requiredConfiguration();
+
+  /*
+   * Maximum number of opportunity detail records to load.
+   * This protects the Current RMS API from excessive requests.
+   */
+  const maximum = envNumber(
+    "MAX_OPPORTUNITIES",
+    45
+  );
+
+  const includeCustomerName =
+    String(
+      process.env.INCLUDE_CUSTOMER_NAME ?? "true"
+    ).toLowerCase() === "true";
+
+  /*
+   * First retrieve the Current RMS opportunity list.
+   */
+  const list = await listOpportunities(fromDate);
+
+  /*
+   * Remove cancelled, lost and completed opportunities.
+   *
+   * Quotations and provisional opportunities remain included.
+   */
+  const activeOpportunities = list.filter(
+    opportunityLooksActive
+  );
+
+  /*
+   * Use the summary rental/event dates to select opportunities which
+   * overlap the chosen dashboard range.
+   *
+   * Jobs with no visible summary dates are also retained because their
+   * prep/load dates may only appear in the full opportunity response.
+   */
+  const summariesInRange = activeOpportunities
+    .filter((opportunity) =>
+      summaryOverlapsDateRange(
+        opportunity,
+        fromDate,
+        toDate
+      )
+    )
+    .sort(
+      (a, b) =>
+        summarySortValue(a) -
+        summarySortValue(b)
+    );
+
+  /*
+   * Only apply the API safety limit after selecting opportunities
+   * which overlap the date range.
+   *
+   * This prevents booked-out jobs from taking all available slots
+   * before upcoming opportunities are considered.
+   */
+  const candidates =
+    maximum > 0
+      ? summariesInRange.slice(0, maximum)
+      : summariesInRange;
+
+  console.log(
+    `[Current RMS] listed=${list.length} ` +
+      `activeOpportunities=${activeOpportunities.length} ` +
+      `summariesInRange=${summariesInRange.length} ` +
+      `loadingDetails=${candidates.length}`
+  );
+
+  /*
+   * Retrieve each opportunity's full details.
+   */
+  const jobs = await mapWithConcurrency(
+    candidates,
+    4,
+    async (summary) => {
+      const id =
+        summary.id ||
+        summary.opportunity_id;
+
+      if (!id) {
+        return null;
+      }
+
+      try {
+        const detail =
+          await retrieveOpportunity(id);
+
+        let items = [];
+
+        /*
+         * If the full opportunity did not include its item lines,
+         * retrieve them separately.
+         */
+        if (!hasEmbeddedItems(detail)) {
+          items =
+            await retrieveOpportunityItems(id);
+        }
+
+        return normaliseOpportunity(
+          detail,
+          items,
+          {
+            subdomain,
+            includeCustomerName
+          }
+        );
+      } catch (error) {
+        /*
+         * One broken opportunity should not prevent the entire
+         * warehouse dashboard from loading.
+         */
+        console.error(
+          `[Current RMS] Could not load opportunity ${id}: ` +
+            error.message
+        );
+
+        return null;
+      }
+    }
+  );
+
+  const normalisedJobs = jobs.filter(Boolean);
+
+  /*
+   * Apply the final filter using the detailed scheduler dates.
+   *
+   * These include:
+   * - Prep date
+   * - Load-out date
+   * - Delivery date
+   * - Event/start date
+   * - Return/unload date
+   */
+  const relevantJobs = normalisedJobs
+    .filter((job) =>
+      isRelevantToDateRange(
+        job,
+        fromDate,
+        toDate
+      )
+    )
+    .sort(
+      (a, b) =>
+        jobSortValue(a) -
+        jobSortValue(b)
+    );
+
+  console.log(
+    `[Current RMS] normalised=${normalisedJobs.length} ` +
+      `relevant=${relevantJobs.length}`
+  );
+
+  return relevantJobs;
+}
+
+export async function getOpportunityDiagnostics(
+  opportunityId
+) {
+  const detail =
+    await retrieveOpportunity(opportunityId);
+
+  const items = hasEmbeddedItems(detail)
+    ? []
+    : await retrieveOpportunityItems(
+        opportunityId
+      );
+
+  return diagnosticSummary(
+    detail,
+    items
+  );
 }
