@@ -187,25 +187,50 @@ function statusLooksPrepared(value) {
 
 function preparedForItem(rawItem, totalQuantity) {
   const item = unwrapRecord(rawItem);
+
+  /*
+   * First look for an explicit prepared quantity.
+   */
   const directValues = PREP_QUANTITY_FIELDS
-    .filter((field) => item[field] !== undefined && item[field] !== null)
+    .filter(
+      (field) =>
+        item[field] !== undefined &&
+        item[field] !== null
+    )
     .map((field) => numeric(item[field]));
 
   if (directValues.length) {
     return {
-      quantity: Math.min(totalQuantity, Math.max(...directValues, 0)),
+      quantity: Math.min(
+        totalQuantity,
+        Math.max(...directValues, 0)
+      ),
       quality: "exact"
     };
   }
 
+  /*
+   * Next inspect any individual asset records.
+   */
   const assets = assetArray(item);
+
   if (assets.length) {
     let quantity = 0;
     let recognised = false;
 
     for (const rawAsset of assets) {
       const asset = unwrapRecord(rawAsset);
-      const state = firstValue(asset, ["warehouse_status", "scan_status", "status", "state", "item_status"]);
+
+      const state = firstValue(asset, [
+        "status_name",
+        "state_name",
+        "warehouse_status",
+        "scan_status",
+        "item_status",
+        "status",
+        "state"
+      ]);
+
       const booleanPrepared = [
         asset.prepared,
         asset.is_prepared,
@@ -215,28 +240,62 @@ function preparedForItem(rawItem, totalQuantity) {
         asset.is_checked_in
       ].some(Boolean);
 
-      if (state || booleanPrepared) recognised = true;
-      if (booleanPrepared || statusLooksPrepared(state)) {
-        quantity += Math.max(1, numeric(asset.quantity || 1));
+      if (
+        state !== null ||
+        booleanPrepared
+      ) {
+        recognised = true;
+      }
+
+      if (
+        booleanPrepared ||
+        statusLooksPrepared(state)
+      ) {
+        quantity += Math.max(
+          1,
+          numeric(asset.quantity || 1)
+        );
       }
     }
 
     if (recognised) {
       return {
-        quantity: Math.min(totalQuantity, quantity),
+        quantity: Math.min(
+          totalQuantity,
+          quantity
+        ),
         quality: "exact"
       };
     }
   }
 
+  /*
+   * Current RMS supplies the warehouse state on each opportunity
+   * item using status_name, for example:
+   *
+   * Reserved
+   * Allocated
+   * Prepared
+   * Booked Out
+   * Checked In
+   * Completed
+   */
   const itemStatus = firstValue(item, [
+    "status_name",
+    "state_name",
+    "warehouse_status_name",
+    "prep_status_name",
+    "item_status_name",
     "warehouse_status",
     "prep_status",
     "item_status",
-    "status",
-    "state"
+    "state",
+    "status"
   ]);
 
+  /*
+   * Prepared and all later warehouse states count as prepared.
+   */
   if (
     statusLooksPrepared(itemStatus) ||
     item.prepared === true ||
@@ -245,18 +304,59 @@ function preparedForItem(rawItem, totalQuantity) {
     item.booked_out_at ||
     item.checked_in_at
   ) {
-    return { quantity: totalQuantity, quality: "status-derived" };
-  }
-
-  const percent = numeric(firstValue(item, ["prepared_percentage", "prep_percentage"]));
-  if (percent > 0) {
     return {
-      quantity: Math.min(totalQuantity, Math.round((totalQuantity * percent) / 100)),
+      quantity: totalQuantity,
       quality: "status-derived"
     };
   }
 
-  return { quantity: 0, quality: "unavailable" };
+  /*
+   * Some API responses may contain a preparation percentage.
+   */
+  const percent = numeric(
+    firstValue(item, [
+      "prepared_percentage",
+      "prep_percentage"
+    ])
+  );
+
+  if (percent > 0) {
+    return {
+      quantity: Math.min(
+        totalQuantity,
+        Math.round(
+          (totalQuantity * percent) / 100
+        )
+      ),
+      quality: "status-derived"
+    };
+  }
+
+  /*
+   * If Current RMS returned a named status such as Reserved or
+   * Allocated, the mapping is working and the prepared quantity
+   * is genuinely zero.
+   */
+  if (
+    item.status_name ||
+    item.state_name ||
+    item.warehouse_status_name ||
+    item.prep_status_name ||
+    item.item_status_name
+  ) {
+    return {
+      quantity: 0,
+      quality: "status-derived"
+    };
+  }
+
+  /*
+   * No useful preparation information was present.
+   */
+  return {
+    quantity: 0,
+    quality: "unavailable"
+  };
 }
 
 function extractItems(opportunity, separatelyFetchedItems = []) {
