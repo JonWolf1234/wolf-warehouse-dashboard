@@ -159,6 +159,14 @@ async function fetchJobs({
       ? payload.jobs
       : [];
 
+console.table(
+  state.jobs.map((job) => ({
+    reference: job.reference,
+    state: job.opportunityState,
+    status: job.opportunityStatus
+  }))
+);
+
     setConnection(
       "live",
       payload.mode === "mock"
@@ -307,17 +315,8 @@ function withinSelectedDates(job) {
   );
 }
 
-function normalisedOpportunityStatus(job) {
-  return String(
-    job.opportunityStatus ||
-      job.opportunityStatusName ||
-      job.statusName ||
-      job.stateName ||
-      job.type ||
-      job.status ||
-      job.state ||
-      ""
-  )
+function normaliseStatusValue(value) {
+  return String(value || "")
     .trim()
     .toLowerCase()
     .replace(/[_-]+/g, " ")
@@ -329,42 +328,54 @@ function matchesOpportunityType(job) {
     elements.opportunityTypeFilter?.value ||
     "orders";
 
-  const status =
-    normalisedOpportunityStatus(job);
+  const state = normaliseStatusValue(
+    job.opportunityState ||
+    job.stateName ||
+    job.state
+  );
+
+  const status = normaliseStatusValue(
+    job.opportunityStatus ||
+    job.statusName ||
+    job.status
+  );
 
   if (selected === "all") {
     return true;
   }
 
   if (selected === "orders") {
-    return (
-      status === "order" ||
-      status === "confirmed order" ||
-      status.includes("confirmed") ||
-      (
-        status.includes("order") &&
-        !status.includes("booked out")
-      )
-    );
+    const isOrder =
+      state === "order" ||
+      state.includes("confirmed order") ||
+      state.includes("order");
+
+    const isBookedOut =
+      status.includes("booked out") ||
+      status.includes("bookedout");
+
+    return isOrder && !isBookedOut;
   }
 
   if (selected === "quotes") {
     return (
-      status.includes("quote") ||
-      status.includes("quotation")
+      state.includes("quote") ||
+      state.includes("quotation")
     );
   }
 
   if (selected === "provisional") {
-    return status.includes(
-      "provisional"
+    return (
+      state.includes("provisional") ||
+      status.includes("provisional")
     );
   }
 
   if (selected === "booked-out") {
     return (
       status.includes("booked out") ||
-      status.includes("bookedout")
+      status.includes("bookedout") ||
+      state.includes("booked out")
     );
   }
 

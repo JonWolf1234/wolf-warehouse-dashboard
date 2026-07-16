@@ -454,70 +454,214 @@ export function scheduleDates(opportunity) {
   };
 }
 
-export function normaliseOpportunity(rawOpportunity, separatelyFetchedItems, options = {}) {
+export function normaliseOpportunity(
+  rawOpportunity,
+  separatelyFetchedItems,
+  options = {}
+) {
   const opportunity = unwrapRecord(rawOpportunity);
-  const items = extractItems(opportunity, separatelyFetchedItems).filter(isPhysicalRentalItem);
+
+  const items = extractItems(
+    opportunity,
+    separatelyFetchedItems
+  ).filter(isPhysicalRentalItem);
 
   let totalItems = 0;
   let preparedItems = 0;
+
   const qualities = [];
 
   for (const item of items) {
     const quantity = quantityForItem(item);
-    if (quantity <= 0) continue;
+
+    if (quantity <= 0) {
+      continue;
+    }
+
     totalItems += quantity;
-    const prepared = preparedForItem(item, quantity);
+
+    const prepared = preparedForItem(
+      item,
+      quantity
+    );
+
     preparedItems += prepared.quantity;
     qualities.push(prepared.quality);
   }
 
-  preparedItems = Math.min(totalItems, preparedItems);
-  const prepDataQuality = combineQuality(qualities);
-  const dates = scheduleDates(opportunity);
+  preparedItems = Math.min(
+    totalItems,
+    preparedItems
+  );
 
-  const id = firstValue(opportunity, ["id", "opportunity_id"]);
-  const reference = firstValue(opportunity, [
-    "number",
-    "reference",
-    "opportunity_number",
-    "order_number",
-    "job_number"
-  ]);
-  const name = firstValue(opportunity, ["subject", "name", "title", "description"]) || `Job ${reference || id}`;
- const customer = options.includeCustomerName
-  ? options.customerName ||
-    firstValue(opportunity, [
-      "customer_name",
-      "organisation_name",
-      "organization_name",
-      "member_name",
-      "billing_address_name",
-      "customer.name",
-      "organisation.name",
-      "organization.name",
-      "member.name",
-      "member.organisation_name",
-      "member.organization_name"
-    ])
-  : null;
+  const prepDataQuality =
+    combineQuality(qualities);
 
-  const status = firstValue(opportunity, ["status_name", "status", "state", "opportunity_status"]);
-  const type = firstValue(opportunity, ["opportunity_type", "type_name", "type"]);
-  const subdomain = options.subdomain;
+  const dates =
+    scheduleDates(opportunity);
+
+  const id = firstValue(
+    opportunity,
+    [
+      "id",
+      "opportunity_id"
+    ]
+  );
+
+  const reference = firstValue(
+    opportunity,
+    [
+      "number",
+      "reference",
+      "opportunity_number",
+      "order_number",
+      "job_number"
+    ]
+  );
+
+  const name =
+    firstValue(
+      opportunity,
+      [
+        "subject",
+        "name",
+        "title",
+        "description"
+      ]
+    ) ||
+    `Job ${reference || id}`;
+
+  const customer =
+    options.includeCustomerName
+      ? options.customerName ||
+        firstValue(
+          opportunity,
+          [
+            "customer_name",
+            "organisation_name",
+            "organization_name",
+            "member_name",
+            "billing_address_name",
+            "customer.name",
+            "organisation.name",
+            "organization.name",
+            "member.name",
+            "member.organisation_name",
+            "member.organization_name"
+          ]
+        )
+      : null;
+
+  /*
+   * Current RMS uses state_name for the commercial
+   * opportunity state, such as:
+   *
+   * Order
+   * Quote
+   * Provisional
+   */
+  const opportunityState =
+    firstValue(
+      opportunity,
+      [
+        "state_name",
+        "state"
+      ]
+    );
+
+  /*
+   * Current RMS uses status_name for the operational
+   * warehouse status, such as:
+   *
+   * Active
+   * Prepared
+   * Booked Out
+   * Checked In
+   */
+  const opportunityStatus =
+    firstValue(
+      opportunity,
+      [
+        "status_name",
+        "status"
+      ]
+    );
+
+  const type =
+    firstValue(
+      opportunity,
+      [
+        "opportunity_type",
+        "type_name",
+        "type"
+      ]
+    );
+
+  const subdomain =
+    options.subdomain;
 
   return {
     id,
-    reference: reference || "",
+
+    reference:
+      reference || "",
+
     name,
-    customer: customer || "",
-    status: status || "",
-    type: type || "",
-    totalItems: Math.round(totalItems * 100) / 100,
-    preparedItems: Math.round(preparedItems * 100) / 100,
-    preparedPercent: totalItems > 0 ? Math.round((preparedItems / totalItems) * 100) : 0,
+
+    customer:
+      customer || "",
+
+    /*
+     * New separate values used by the dropdown.
+     */
+    opportunityState:
+      opportunityState || "",
+
+    opportunityStatus:
+      opportunityStatus || "",
+
+    /*
+     * Keep these older fields for compatibility with
+     * the existing search and display code.
+     */
+    status:
+      opportunityStatus ||
+      opportunityState ||
+      "",
+
+    type:
+      type ||
+      opportunityState ||
+      "",
+
+    totalItems:
+      Math.round(
+        totalItems * 100
+      ) / 100,
+
+    preparedItems:
+      Math.round(
+        preparedItems * 100
+      ) / 100,
+
+    preparedPercent:
+      totalItems > 0
+        ? Math.round(
+            (
+              preparedItems /
+              totalItems
+            ) * 100
+          )
+        : 0,
+
     prepDataQuality,
+
     ...dates,
-    currentRmsUrl: subdomain && id ? `https://${subdomain}.current-rms.com/opportunities/${id}` : null
+
+    currentRmsUrl:
+      subdomain && id
+        ? `https://${subdomain}.current-rms.com/opportunities/${id}`
+        : null
   };
 }
 
