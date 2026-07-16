@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: wolf-warehouse-dashboard-api
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: USE_MOCK_DATA
+        value: true
+      - key: CURRENT_RMS_SUBDOMAIN
+        sync: false
+      - key: CURRENT_RMS_API_KEY
+        sync: false
+      - key: DASHBOARD_ACCESS_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: CACHE_SECONDS
+        value: 55
+      - key: MAX_OPPORTUNITIES
+        value: 45
+      - key: INCLUDE_CUSTOMER_NAME
+        value: true
+      - key: ENABLE_DIAGNOSTICS
+        value: false
