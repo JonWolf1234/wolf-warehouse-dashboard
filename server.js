@@ -8,6 +8,10 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 
+
+console.log("RUNNING SERVER FILE:");
+console.log(import.meta.url);
+
 import {
   getOpportunityDiagnostics,
   getOpportunityItemDiagnostics,
