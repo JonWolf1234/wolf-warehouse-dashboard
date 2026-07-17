@@ -938,17 +938,32 @@ export function warehouseItemDiagnostics(
       quantity,
 
       preparedQuantity:
-        prepared.quantity,
+  prepared.quantity,
 
-      outstandingQuantity,
+outstandingQuantity,
 
-      preparationQuality:
-        prepared.quality,
+preparationQuality:
+  prepared.quality,
 
-      includedInDashboard:
-        included
-    };
-  });
+includedInDashboard:
+  included,
+
+rawQuantityFields: Object.fromEntries(
+  Object.entries(item).filter(([key]) => {
+    const lowerKey = key.toLowerCase();
+
+    return (
+      lowerKey.includes("quantity") ||
+      lowerKey.includes("prepared") ||
+      lowerKey.includes("allocated") ||
+      lowerKey.includes("booked") ||
+      lowerKey.includes("checked") ||
+      lowerKey.includes("asset") ||
+      lowerKey.includes("status")
+    );
+  })
+)
+};
 
   const includedItems = itemResults.filter(
     (item) =>
