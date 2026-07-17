@@ -1665,3 +1665,665 @@ tr.is-mapping .progress-track span {
     height: auto;
   }
 }
+
+.expand-cell {
+  width: 60px;
+  text-align: center;
+}
+
+.expand-button {
+  width: 34px;
+  height: 34px;
+
+  border: 1px solid var(--line);
+  border-radius: 50%;
+
+  background: var(--panel-raised);
+  color: var(--text);
+
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.expand-button:hover {
+  border-color: var(--green);
+}
+
+/* =========================================================
+   CERTIFICATE UPLOAD MODAL
+   ========================================================= */
+
+.certificate-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+
+  display: grid;
+  place-items: center;
+
+  padding: 20px;
+}
+
+.certificate-modal[hidden] {
+  display: none;
+}
+
+.certificate-modal-backdrop {
+  position: absolute;
+  inset: 0;
+
+  background: rgba(5, 7, 8, 0.78);
+  backdrop-filter: blur(12px);
+}
+
+.certificate-modal-card {
+  position: relative;
+  z-index: 1;
+
+  width: min(560px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+
+  padding: 26px;
+
+  border: 1px solid var(--line);
+  border-radius: 22px;
+
+  background: var(--panel);
+  color: var(--text);
+
+  box-shadow:
+    0 30px 90px
+    rgba(0, 0, 0, 0.48);
+}
+
+.certificate-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+
+  margin-bottom: 24px;
+}
+
+.certificate-modal-header h2 {
+  margin: 0;
+}
+
+.certificate-modal-close {
+  width: 38px;
+  height: 38px;
+
+  flex: 0 0 38px;
+
+  border: 1px solid var(--line);
+  border-radius: 50%;
+
+  background: var(--panel-raised);
+  color: var(--text);
+
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.certificate-modal-close:hover {
+  border-color: var(--green);
+}
+
+.certificate-upload-form {
+  display: grid;
+  gap: 17px;
+}
+
+.certificate-file-field {
+  display: grid;
+  gap: 7px;
+}
+
+.certificate-file-field > span:first-child {
+  color: var(--muted);
+
+  font-size: 0.75rem;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.certificate-file-field input {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  overflow: hidden;
+  opacity: 0;
+}
+
+.certificate-file-drop {
+  display: grid;
+  place-items: center;
+  gap: 7px;
+
+  min-height: 120px;
+
+  padding: 20px;
+
+  border:
+    1px dashed
+    color-mix(
+      in srgb,
+      var(--green) 48%,
+      var(--line)
+    );
+
+  border-radius: 14px;
+
+  background: var(--input-bg);
+
+  cursor: pointer;
+  text-align: center;
+}
+
+.certificate-file-drop:hover {
+  border-color: var(--green);
+}
+
+.certificate-file-drop strong {
+  color: var(--green);
+}
+
+.certificate-file-drop small {
+  color: var(--muted);
+}
+
+.certificate-filename-preview {
+  display: grid;
+  gap: 7px;
+
+  padding: 14px 15px;
+
+  border: 1px solid var(--line);
+  border-radius: 12px;
+
+  background: var(--panel-raised);
+}
+
+.certificate-filename-preview span {
+  color: var(--muted);
+
+  font-size: 0.72rem;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.certificate-filename-preview strong {
+  overflow-wrap: anywhere;
+
+  color: var(--orange);
+  font-size: 0.9rem;
+}
+
+.certificate-form-message {
+  min-height: 20px;
+  margin: 0;
+
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.certificate-form-message.is-error {
+  color: var(--red);
+}
+
+.certificate-form-message.is-success {
+  color: var(--green);
+}
+
+.certificate-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  margin-top: 4px;
+}
+
+@media (max-width: 560px) {
+  .certificate-modal-card {
+    padding: 22px 18px;
+  }
+
+  .certificate-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .certificate-modal-actions .button {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   EXPANDED JOB ACTIONS
+   ========================================================= */
+
+.expand-cell {
+  width: 62px;
+  text-align: center;
+}
+
+.expand-button {
+  width: 35px;
+  height: 35px;
+
+  border: 1px solid var(--line);
+  border-radius: 50%;
+
+  background: var(--panel-raised);
+  color: var(--text);
+
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.expand-button:hover {
+  border-color: var(--green);
+  background: var(--input-bg);
+}
+
+.expand-button.is-open {
+  transform: rotate(45deg);
+
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.job-actions-row > td {
+  padding: 0;
+
+  border-bottom: 1px solid var(--line);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--panel-raised) 60%,
+      var(--panel)
+    );
+}
+
+.job-actions-row:hover {
+  background: transparent;
+}
+
+.job-actions-panel {
+  display: grid;
+  grid-template-columns: 245px minmax(0, 1fr);
+
+  min-height: 390px;
+
+  border-top: 1px solid var(--line);
+}
+
+.job-actions-navigation {
+  padding: 22px;
+
+  border-right: 1px solid var(--line);
+
+  background:
+    color-mix(
+      in srgb,
+      var(--table-head) 72%,
+      transparent
+    );
+}
+
+.job-actions-navigation .eyebrow {
+  margin-bottom: 17px;
+}
+
+.job-action-tab {
+  display: grid;
+  gap: 5px;
+
+  width: 100%;
+
+  margin-bottom: 9px;
+  padding: 14px;
+
+  border: 1px solid transparent;
+  border-radius: 13px;
+
+  background: transparent;
+  color: var(--text);
+
+  text-align: left;
+
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.job-action-tab:hover {
+  background: var(--row-hover);
+}
+
+.job-action-tab.is-active {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--green) 45%,
+      var(--line)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--green) 8%,
+      var(--panel)
+    );
+}
+
+.job-action-tab strong {
+  font-size: 0.9rem;
+}
+
+.job-action-tab span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.job-actions-content {
+  min-width: 0;
+  padding: 25px;
+}
+
+.job-action-view {
+  display: none;
+}
+
+.job-action-view.is-active {
+  display: block;
+}
+
+.job-action-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+
+  margin-bottom: 22px;
+}
+
+.job-action-heading h3 {
+  margin: 0;
+
+  font-size: 1.3rem;
+  letter-spacing: -0.025em;
+}
+
+.action-job-reference {
+  padding: 7px 10px;
+
+  border: 1px solid var(--line);
+  border-radius: 999px;
+
+  color: var(--orange);
+
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.action-field {
+  display: grid;
+  gap: 8px;
+}
+
+.action-field > span {
+  color: var(--muted);
+
+  font-size: 0.72rem;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.action-field textarea,
+.action-field input {
+  width: 100%;
+
+  border: 1px solid var(--line);
+  border-radius: 12px;
+
+  padding: 13px;
+
+  outline: none;
+
+  background: var(--input-bg);
+  color: var(--text);
+
+  resize: vertical;
+}
+
+.action-field textarea:focus,
+.action-field input:focus {
+  border-color: var(--green);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(66, 211, 124, 0.09);
+}
+
+.action-help {
+  margin: 9px 0 14px;
+
+  color: var(--muted);
+
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.job-action-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+
+  margin-top: 14px;
+}
+
+.warehouse-notes-message {
+  min-height: 20px;
+  margin: 0;
+
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.warehouse-notes-message.is-success {
+  color: var(--green);
+}
+
+.certificate-action-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(260px, 0.85fr)
+    minmax(320px, 1.15fr);
+
+  gap: 24px;
+}
+
+.certificate-results-panel {
+  min-height: 245px;
+
+  padding: 16px;
+
+  border: 1px solid var(--line);
+  border-radius: 14px;
+
+  background: var(--input-bg);
+}
+
+.certificate-results-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+
+  min-height: 210px;
+
+  color: var(--muted);
+  text-align: center;
+}
+
+.certificate-results-empty strong {
+  color: var(--text);
+}
+
+.certificate-results-empty span {
+  max-width: 310px;
+
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.certificate-result-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 15px;
+
+  margin-bottom: 13px;
+  padding-bottom: 13px;
+
+  border-bottom: 1px solid var(--line);
+}
+
+.certificate-result-message {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.certificate-result-list {
+  display: grid;
+  gap: 8px;
+
+  max-height: 230px;
+  overflow: auto;
+}
+
+.certificate-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 10px 11px;
+
+  border: 1px solid var(--line);
+  border-radius: 10px;
+
+  background: var(--panel);
+}
+
+.certificate-result-item strong {
+  display: block;
+
+  font-size: 0.82rem;
+}
+
+.certificate-result-item span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.certificate-result-status {
+  flex: 0 0 auto;
+
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.certificate-result-item.is-found .certificate-result-status {
+  color: var(--green);
+}
+
+.certificate-result-item.is-missing .certificate-result-status {
+  color: var(--red);
+}
+
+.certificate-email-section {
+  display: grid;
+  grid-template-columns: minmax(250px, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+
+  margin-top: 22px;
+  padding-top: 20px;
+
+  border-top: 1px solid var(--line);
+}
+
+.certificate-send-message {
+  min-height: 20px;
+  margin: 10px 0 0;
+
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .job-actions-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .job-actions-navigation {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .job-actions-navigation .eyebrow {
+    display: none;
+  }
+
+  .job-action-tab {
+    min-width: 190px;
+    margin: 0;
+  }
+
+  .certificate-action-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .job-actions-content {
+    padding: 20px 15px;
+  }
+
+  .certificate-email-section {
+    grid-template-columns: 1fr;
+  }
+
+  .certificate-email-section .button {
+    width: 100%;
+  }
+}

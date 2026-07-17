@@ -18,6 +18,59 @@ const elements = {
   refreshButton: document.querySelector("#refreshButton"),
   fullscreenButton: document.querySelector("#fullscreenButton"),
 
+
+  certificatesButton:
+    document.querySelector(
+      "#certificatesButton"
+    ),
+
+  certificateModal:
+    document.querySelector(
+      "#certificateModal"
+    ),
+
+  certificateUploadForm:
+    document.querySelector(
+      "#certificateUploadForm"
+    ),
+
+  certificateAssetNumber:
+    document.querySelector(
+      "#certificateAssetNumber"
+    ),
+
+  certificateDescription:
+    document.querySelector(
+      "#certificateDescription"
+    ),
+
+  certificateFile:
+    document.querySelector(
+      "#certificateFile"
+    ),
+
+  certificateFileName:
+    document.querySelector(
+      "#certificateFileName"
+    ),
+
+  certificateFilenamePreview:
+    document.querySelector(
+      "#certificateFilenamePreview"
+    ),
+
+  certificateFormMessage:
+    document.querySelector(
+      "#certificateFormMessage"
+    ),
+
+  certificateUploadButton:
+    document.querySelector(
+      "#certificateUploadButton"
+    ),
+
+
+
   jobsMetric: document.querySelector("#jobsMetric"),
   itemsMetric: document.querySelector("#itemsMetric"),
   preparedMetric: document.querySelector("#preparedMetric"),
@@ -613,13 +666,564 @@ function fillDateCell(cell, value) {
   );
 }
 
+function extractAssetNumbers(value) {
+  return [
+    ...new Set(
+      String(value || "")
+        .match(/\b\d{6,8}\b/g) ||
+      []
+    )
+  ];
+}
+
+function warehouseNotesKey(job) {
+  return `warehouseNotes:${
+    job.id || job.reference
+  }`;
+}
+
+function createCertificateResultItem({
+  assetNumber,
+  filename,
+  found
+}) {
+  const item =
+    document.createElement("div");
+
+  item.className =
+    `certificate-result-item ${
+      found
+        ? "is-found"
+        : "is-missing"
+    }`;
+
+  const copy =
+    document.createElement("div");
+
+  const strong =
+    document.createElement("strong");
+
+  strong.textContent =
+    assetNumber;
+
+  const detail =
+    document.createElement("span");
+
+  detail.textContent =
+    found
+      ? filename
+      : "No certificate found";
+
+  copy.append(
+    strong,
+    detail
+  );
+
+  const status =
+    document.createElement("div");
+
+  status.className =
+    "certificate-result-status";
+
+  status.textContent =
+    found
+      ? "Found"
+      : "Missing";
+
+  item.append(
+    copy,
+    status
+  );
+
+  return item;
+}
+
+function wireJobActions(
+  row,
+  actionsRow,
+  job
+) {
+  const expandButton =
+    row.querySelector(
+      ".expand-button"
+    );
+
+  const tabs =
+    actionsRow.querySelectorAll(
+      ".job-action-tab"
+    );
+
+  const views =
+    actionsRow.querySelectorAll(
+      ".job-action-view"
+    );
+
+  expandButton.addEventListener(
+    "click",
+    () => {
+      const opening =
+        actionsRow.hidden;
+
+      actionsRow.hidden =
+        !opening;
+
+      expandButton.classList.toggle(
+        "is-open",
+        opening
+      );
+
+      expandButton.setAttribute(
+        "aria-expanded",
+        String(opening)
+      );
+    }
+  );
+
+  tabs.forEach((tab) => {
+    tab.addEventListener(
+      "click",
+      () => {
+        const selected =
+          tab.dataset.actionPanel;
+
+        tabs.forEach(
+          (candidate) => {
+            candidate.classList.toggle(
+              "is-active",
+              candidate === tab
+            );
+          }
+        );
+
+        views.forEach(
+          (view) => {
+            view.classList.toggle(
+              "is-active",
+              view.dataset.actionView ===
+                selected
+            );
+          }
+        );
+      }
+    );
+  });
+
+  const notesInput =
+    actionsRow.querySelector(
+      ".warehouse-notes-input"
+    );
+
+  const notesMessage =
+    actionsRow.querySelector(
+      ".warehouse-notes-message"
+    );
+
+  const savedNotes =
+    localStorage.getItem(
+      warehouseNotesKey(job)
+    );
+
+  notesInput.value =
+    savedNotes || "";
+
+  actionsRow
+    .querySelector(
+      ".save-warehouse-notes"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        localStorage.setItem(
+          warehouseNotesKey(job),
+          notesInput.value
+        );
+
+        notesMessage.textContent =
+          "Notes saved on this warehouse screen.";
+
+        notesMessage.classList.add(
+          "is-success"
+        );
+
+        setTimeout(() => {
+          notesMessage.textContent =
+            "";
+
+          notesMessage.classList.remove(
+            "is-success"
+          );
+        }, 2500);
+      }
+    );
+
+  const serialInput =
+    actionsRow.querySelector(
+      ".motor-serial-input"
+    );
+
+  const findButton =
+    actionsRow.querySelector(
+      ".find-job-certificates"
+    );
+
+  const emptyResults =
+    actionsRow.querySelector(
+      ".certificate-results-empty"
+    );
+
+  const results =
+    actionsRow.querySelector(
+      ".certificate-results"
+    );
+
+  const resultCount =
+    actionsRow.querySelector(
+      ".certificate-result-count"
+    );
+
+  const resultMessage =
+    actionsRow.querySelector(
+      ".certificate-result-message"
+    );
+
+  const resultList =
+    actionsRow.querySelector(
+      ".certificate-result-list"
+    );
+
+  const emailInput =
+    actionsRow.querySelector(
+      ".certificate-email-input"
+    );
+
+  const sendButton =
+    actionsRow.querySelector(
+      ".send-job-certificates"
+    );
+
+  const sendMessage =
+    actionsRow.querySelector(
+      ".certificate-send-message"
+    );
+
+  let foundCertificates = [];
+
+  findButton.addEventListener(
+    "click",
+    async () => {
+      const assetNumbers =
+        extractAssetNumbers(
+          serialInput.value
+        );
+
+      if (!assetNumbers.length) {
+        resultMessage.textContent =
+          "Enter at least one serial number.";
+
+        emptyResults.hidden =
+          true;
+
+        results.hidden =
+          false;
+
+        resultCount.textContent =
+          "0 of 0 found";
+
+        resultList.replaceChildren();
+
+        return;
+      }
+
+      findButton.disabled =
+        true;
+
+      findButton.textContent =
+        "Searching…";
+
+      resultMessage.textContent =
+        "Checking the private certificate library…";
+
+      emptyResults.hidden =
+        true;
+
+      results.hidden =
+        false;
+
+      resultList.replaceChildren();
+
+      sendButton.disabled =
+        true;
+
+      foundCertificates = [];
+
+      try {
+        const response =
+          await fetch(
+            apiUrl(
+              "/api/certificates/find"
+            ),
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                "X-Dashboard-Key":
+                  state.accessKey
+              },
+
+              body:
+                JSON.stringify({
+                  assetNumbers
+                })
+            }
+          );
+
+        const payload =
+          await response
+            .json()
+            .catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(
+            payload.error ||
+            "Certificate search failed."
+          );
+        }
+
+        foundCertificates =
+          Array.isArray(
+            payload.found
+          )
+            ? payload.found
+            : [];
+
+        const missing =
+          Array.isArray(
+            payload.missing
+          )
+            ? payload.missing
+            : [];
+
+        resultCount.textContent =
+          `${foundCertificates.length} of ${assetNumbers.length} found`;
+
+        resultMessage.textContent =
+          missing.length
+            ? `${missing.length} missing`
+            : "Complete certificate set";
+
+        const resultItems = [];
+
+        foundCertificates.forEach(
+          (certificate) => {
+            resultItems.push(
+              createCertificateResultItem({
+                assetNumber:
+                  certificate.assetNumber,
+
+                filename:
+                  certificate.filename,
+
+                found: true
+              })
+            );
+          }
+        );
+
+        missing.forEach(
+          (assetNumber) => {
+            resultItems.push(
+              createCertificateResultItem({
+                assetNumber,
+                filename: "",
+                found: false
+              })
+            );
+          }
+        );
+
+        resultList.replaceChildren(
+          ...resultItems
+        );
+
+        sendButton.disabled =
+          !foundCertificates.length ||
+          !emailInput.validity.valid ||
+          !emailInput.value.trim();
+
+        sendMessage.textContent =
+          foundCertificates.length
+            ? "Enter a recipient email address to prepare the certificate email."
+            : "No certificates are currently available to send.";
+      } catch (error) {
+        console.error(error);
+
+        resultCount.textContent =
+          "Search failed";
+
+        resultMessage.textContent =
+          error.message;
+
+        resultList.replaceChildren();
+      } finally {
+        findButton.disabled =
+          false;
+
+        findButton.textContent =
+          "Find certificates";
+      }
+    }
+  );
+
+  emailInput.addEventListener(
+    "input",
+    () => {
+      sendButton.disabled =
+        !foundCertificates.length ||
+        !emailInput.validity.valid ||
+        !emailInput.value.trim();
+    }
+  );
+
+sendButton.addEventListener(
+  "click",
+  async () => {
+    const recipient =
+      emailInput.value.trim();
+
+    const assetNumbers =
+      extractAssetNumbers(
+        serialInput.value
+      );
+
+    if (
+      !recipient ||
+      !emailInput.validity.valid
+    ) {
+      sendMessage.textContent =
+        "Enter a valid recipient email address.";
+
+      sendMessage.style.color =
+        "var(--red)";
+
+      return;
+    }
+
+    if (!foundCertificates.length) {
+      sendMessage.textContent =
+        "Find the certificates before sending.";
+
+      sendMessage.style.color =
+        "var(--red)";
+
+      return;
+    }
+
+    sendButton.disabled = true;
+    sendButton.textContent = "Sending…";
+
+    sendMessage.textContent =
+      "Preparing PDFs and sending the email…";
+
+    sendMessage.style.color =
+      "var(--muted)";
+
+    try {
+      const response = await fetch(
+        apiUrl(
+          "/api/certificates/send"
+        ),
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            "X-Dashboard-Key":
+              state.accessKey
+          },
+
+          body: JSON.stringify({
+            recipient,
+            jobReference:
+              job.reference ||
+              `Job ${job.id}`,
+            assetNumbers
+          })
+        }
+      );
+
+      const payload =
+        await response
+          .json()
+          .catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          payload.error ||
+          "The certificates could not be sent."
+        );
+      }
+
+      sendMessage.textContent =
+        `Sent ${payload.attached} certificate${
+          payload.attached === 1
+            ? ""
+            : "s"
+        } to ${payload.recipient}.`;
+
+      if (
+        Array.isArray(payload.missing) &&
+        payload.missing.length
+      ) {
+        sendMessage.textContent +=
+          ` Missing: ${payload.missing.join(
+            ", "
+          )}.`;
+      }
+
+      sendMessage.style.color =
+        "var(--green)";
+    } catch (error) {
+      console.error(error);
+
+      sendMessage.textContent =
+        error.message ||
+        "The certificates could not be sent.";
+
+      sendMessage.style.color =
+        "var(--red)";
+    } finally {
+      sendButton.disabled =
+        !foundCertificates.length ||
+        !emailInput.validity.valid ||
+        !emailInput.value.trim();
+
+      sendButton.textContent =
+        "Send certificates";
+    }
+  }
+);
+}
+
+
 function renderRow(job) {
   const fragment =
     elements.rowTemplate.content
       .cloneNode(true);
 
   const row =
-    fragment.querySelector("tr");
+    fragment.querySelector(
+      ".job-row"
+    );
+
+  const actionsRow =
+    fragment.querySelector(
+      ".job-actions-row"
+    );
 
   const presentation =
     jobPresentation(job);
@@ -751,6 +1355,22 @@ function renderRow(job) {
       ".return-cell"
     ),
     job.returnAt
+  );
+
+  actionsRow
+    .querySelectorAll(
+      ".action-job-reference"
+    )
+    .forEach((element) => {
+      element.textContent =
+        job.reference ||
+        `Job ${job.id}`;
+    });
+
+  wireJobActions(
+    row,
+    actionsRow,
+    job
   );
 
   return fragment;
@@ -947,7 +1567,235 @@ function saveAccessKey(
   state.accessKey = value;
 }
 
+function cleanCertificateDescription(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\.pdf$/i, "")
+    .replace(/[\/\\:*?"<>|]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function updateCertificateFilenamePreview() {
+  const assetNumber =
+    elements.certificateAssetNumber.value
+      .trim()
+      .replace(/\s+/g, "");
+
+  const description =
+    cleanCertificateDescription(
+      elements.certificateDescription.value
+    ) ||
+    "motor certificate";
+
+  elements.certificateFilenamePreview.textContent =
+    `${assetNumber || "Asset number"} ${description}.pdf`;
+}
+
+function openCertificateModal() {
+  elements.certificateUploadForm.reset();
+
+  elements.certificateDescription.value =
+    "motor certificate";
+
+  elements.certificateFileName.textContent =
+    "No file selected";
+
+  elements.certificateFormMessage.textContent =
+    "";
+
+  elements.certificateFormMessage.className =
+    "certificate-form-message";
+
+  elements.certificateModal.hidden =
+    false;
+
+  updateCertificateFilenamePreview();
+
+  requestAnimationFrame(() => {
+    elements.certificateAssetNumber.focus();
+  });
+}
+
+function closeCertificateModal() {
+  elements.certificateModal.hidden =
+    true;
+}
+
+async function uploadCertificate(event) {
+  event.preventDefault();
+
+  const assetNumber =
+    elements.certificateAssetNumber.value
+      .trim();
+
+  const description =
+    elements.certificateDescription.value
+      .trim();
+
+  const file =
+    elements.certificateFile.files?.[0];
+
+  if (!assetNumber || !description || !file) {
+    elements.certificateFormMessage.textContent =
+      "Enter an asset number, description and choose a PDF.";
+
+    elements.certificateFormMessage.className =
+      "certificate-form-message is-error";
+
+    return;
+  }
+
+  const formData =
+    new FormData();
+
+  formData.append(
+    "assetNumber",
+    assetNumber
+  );
+
+  formData.append(
+    "description",
+    description
+  );
+
+  formData.append(
+    "certificate",
+    file
+  );
+
+  elements.certificateUploadButton.disabled =
+    true;
+
+  elements.certificateUploadButton.textContent =
+    "Uploading…";
+
+  elements.certificateFormMessage.textContent =
+    "Uploading certificate to the private library…";
+
+  elements.certificateFormMessage.className =
+    "certificate-form-message";
+
+  try {
+    const response = await fetch(
+      apiUrl("/api/certificates/upload"),
+      {
+        method: "POST",
+
+        headers: {
+          "X-Dashboard-Key":
+            state.accessKey
+        },
+
+        body:
+          formData
+      }
+    );
+
+    const payload =
+      await response
+        .json()
+        .catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        payload.error ||
+        `Upload failed with status ${response.status}.`
+      );
+    }
+
+    elements.certificateFormMessage.textContent =
+      `Uploaded ${payload.certificate?.filename || "certificate"}.`;
+
+    elements.certificateFormMessage.className =
+      "certificate-form-message is-success";
+
+    elements.certificateUploadForm.reset();
+
+    elements.certificateDescription.value =
+      "motor certificate";
+
+    elements.certificateFileName.textContent =
+      "No file selected";
+
+    updateCertificateFilenamePreview();
+  } catch (error) {
+    console.error(error);
+
+    elements.certificateFormMessage.textContent =
+      error.message ||
+      "The certificate could not be uploaded.";
+
+    elements.certificateFormMessage.className =
+      "certificate-form-message is-error";
+  } finally {
+    elements.certificateUploadButton.disabled =
+      false;
+
+    elements.certificateUploadButton.textContent =
+      "Upload certificate";
+  }
+}
+
+
 function wireEvents() {
+
+  elements.certificatesButton.addEventListener(
+    "click",
+    openCertificateModal
+  );
+
+  document
+    .querySelectorAll(
+      "[data-certificate-close]"
+    )
+    .forEach((button) => {
+      button.addEventListener(
+        "click",
+        closeCertificateModal
+      );
+    });
+
+  elements.certificateAssetNumber.addEventListener(
+    "input",
+    updateCertificateFilenamePreview
+  );
+
+  elements.certificateDescription.addEventListener(
+    "input",
+    updateCertificateFilenamePreview
+  );
+
+  elements.certificateFile.addEventListener(
+    "change",
+    () => {
+      const file =
+        elements.certificateFile.files?.[0];
+
+      elements.certificateFileName.textContent =
+        file
+          ? file.name
+          : "No file selected";
+    }
+  );
+
+  elements.certificateUploadForm.addEventListener(
+    "submit",
+    uploadCertificate
+  );
+
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (
+        event.key === "Escape" &&
+        !elements.certificateModal.hidden
+      ) {
+        closeCertificateModal();
+      }
+    }
+  );
+
+
   elements.loginForm.addEventListener(
     "submit",
     async (event) => {

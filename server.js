@@ -1,5 +1,12 @@
 import "dotenv/config";
 
+console.log(
+  "ENV CHECK:",
+  process.env.DASHBOARD_ACCESS_KEY
+    ? "dashboard key loaded"
+    : "dashboard key missing"
+);
+
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -24,9 +31,56 @@ import {
   recordCurrentRmsWebhook
 } from "./src/current-rms-webhooks.js";
 
+import multer from "multer";
+
+import {
+  findGitHubCertificates,
+  uploadGitHubCertificate,
+  listGitHubCertificates,
+  getCertificateBuffers
+} from "./src/github-certificates.js";
+
+import {
+  sendCertificateEmail
+} from "./src/certificate-email.js";
+
 import { mockJobs } from "./src/mock-data.js";
 
 const app = express();
+
+const certificateUpload = multer({
+  storage:
+    multer.memoryStorage(),
+
+  limits: {
+    fileSize:
+      10 * 1024 * 1024
+  },
+
+  fileFilter:
+    (
+      request,
+      file,
+      callback
+    ) => {
+      const isPdf =
+        file.mimetype ===
+          "application/pdf" ||
+        String(file.originalname || "")
+          .toLowerCase()
+          .endsWith(".pdf");
+
+      if (!isPdf) {
+        return callback(
+          new Error(
+            "Only PDF files may be uploaded."
+          )
+        );
+      }
+
+      callback(null, true);
+    }
+});
 
 const port = Number(
   process.env.PORT || 3000
@@ -151,6 +205,8 @@ function requireDashboardKey(
 
   next();
 }
+
+
 
 function validDate(value) {
   return (
@@ -624,6 +680,398 @@ app.get(
   }
 );
 
+
+/* =========================================================
+   DROPBOX CERTIFICATE SEARCH
+   ========================================================= */
+
+app.post(
+  "/api/certificates/find",
+  requireDashboardKey,
+  async (
+    request,
+    response,
+    next
+  ) => {
+    try {
+      const assetNumbers =
+        request.body?.assetNumbers;
+
+      if (
+        !Array.isArray(
+          assetNumbers
+        )
+      ) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "assetNumbers must be an array."
+          });
+      }
+
+      if (
+        assetNumbers.length > 100
+      ) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "A maximum of 100 asset numbers can be searched at once."
+          });
+      }
+
+      const result =
+  await findGitHubCertificates(
+    assetNumbers
+  );
+
+      return response.json(
+        result
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+app.post(
+  "/api/certificates/find",
+  requireDashboardKey,
+  async (
+    request,
+    response,
+    next
+  ) => {
+    try {
+      const assetNumbers =
+        request.body?.assetNumbers;
+
+      if (!Array.isArray(assetNumbers)) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "assetNumbers must be an array."
+          });
+      }
+
+      if (assetNumbers.length > 100) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "A maximum of 100 asset numbers can be searched at once."
+          });
+      }
+
+      const result =
+        await findGitHubCertificates(
+          assetNumbers
+        );
+
+      return response.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+app.post(
+  "/api/certificates/upload",
+  requireDashboardKey,
+  certificateUpload.single(
+    "certificate"
+  ),
+  async (
+    request,
+    response,
+    next
+  ) => {
+    try {
+      if (!request.file) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "Choose a PDF certificate."
+          });
+      }
+
+      const result =
+        await uploadGitHubCertificate({
+          assetNumber:
+            request.body?.assetNumber,
+
+          description:
+            request.body?.description,
+
+          pdfBuffer:
+            request.file.buffer
+        });
+
+      return response
+        .status(201)
+        .json({
+          uploaded: true,
+          certificate: result
+        });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+app.post(
+  "/api/certificates/send",
+  requireDashboardKey,
+  async (
+    request,
+    response,
+    next
+  ) => {
+    try {
+      const recipient =
+        String(
+          request.body?.recipient || ""
+        ).trim();
+
+      const jobReference =
+        String(
+          request.body?.jobReference || ""
+        ).trim();
+
+      const assetNumbers =
+        Array.isArray(
+          request.body?.assetNumbers
+        )
+          ? [
+              ...new Set(
+                request.body.assetNumbers
+                  .map((value) =>
+                    String(value || "")
+                      .trim()
+                  )
+                  .filter(Boolean)
+              )
+            ]
+          : [];
+
+      if (!recipient) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "Enter a recipient email address."
+          });
+      }
+
+      if (
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+          recipient
+        )
+      ) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "Enter a valid recipient email address."
+          });
+      }
+
+      if (!assetNumbers.length) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "Enter at least one motor serial number."
+          });
+      }
+
+      if (assetNumbers.length > 100) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "A maximum of 100 certificates may be sent at once."
+          });
+      }
+
+      const certificateData =
+        await getCertificateBuffers(
+          assetNumbers
+        );
+
+      const attachments =
+        Array.isArray(
+          certificateData.attachments
+        )
+          ? certificateData.attachments
+          : [];
+
+      const found =
+        Array.isArray(
+          certificateData.found
+        )
+          ? certificateData.found
+          : [];
+
+      const missing =
+        Array.isArray(
+          certificateData.missing
+        )
+          ? certificateData.missing
+          : [];
+
+      if (!attachments.length) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "No matching certificates were found.",
+            missing
+          });
+      }
+
+      const displayReference =
+        jobReference ||
+        "your equipment hire";
+
+      await sendCertificateEmail({
+        recipient,
+
+        subject:
+          `Motor certificates - ${displayReference}`,
+
+        text:
+          [
+            "Hi,",
+            "",
+            `Please find attached the motor certificates for ${displayReference}.`,
+            "",
+            missing.length
+              ? `We could not locate certificates for: ${missing.join(", ")}.`
+              : "All requested certificates are attached.",
+            "",
+            "Kind regards,",
+            "",
+            process.env.SMTP_FROM_NAME ||
+              "Wolf Event Services"
+          ].join("\n"),
+
+        attachments
+      });
+
+      return response.json({
+        sent: true,
+        recipient,
+        attached:
+          attachments.length,
+        found:
+          found.map(
+            (certificate) => ({
+              assetNumber:
+                certificate.assetNumber,
+              filename:
+                certificate.filename
+            })
+          ),
+        missing
+      });
+    } catch (error) {
+      console.error(
+        "[Certificate email]",
+        error
+      );
+
+      next(error);
+    }
+  }
+);
+
+app.post(
+  "/api/certificates/send",
+  requireDashboardKey,
+  async (
+    request,
+    response,
+    next
+  ) => {
+    try {
+      const {
+        recipient,
+        assetNumbers,
+        jobReference
+      } = request.body || {};
+
+      if (
+        !recipient ||
+        !Array.isArray(
+          assetNumbers
+        )
+      ) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "recipient and assetNumbers are required."
+          });
+      }
+
+      const {
+        attachments,
+        found,
+        missing
+      } =
+        await getCertificateBuffers(
+          assetNumbers
+        );
+
+      if (!attachments.length) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "No certificates were found."
+          });
+      }
+
+      await sendCertificateEmail({
+        recipient,
+
+        subject:
+          `Motor certificates - ${jobReference}`,
+
+        text:
+          [
+            "Hi,",
+            "",
+            `Please find attached the motor certificates for ${jobReference}.`,
+            "",
+            missing.length
+              ? `Missing certificates: ${missing.join(", ")}`
+              : "All requested certificates are attached.",
+            "",
+            "Kind regards,",
+            "",
+            "Wolf Event Services"
+          ].join("\n"),
+
+        attachments
+      });
+
+      return response.json({
+        sent: true,
+        attached:
+          found.length,
+        missing
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 /* =========================================================
    STATIC DASHBOARD
    These routes must come after every API route.
@@ -704,10 +1152,8 @@ app.use(
       )
       .json({
         error:
-          status === 401
-            ? "Current RMS rejected the API credentials. Check the subdomain and API key."
-            : error.message ||
-              "The warehouse dashboard could not load its data."
+  error.message ||
+  "The warehouse dashboard could not load its data."
       });
   }
 );

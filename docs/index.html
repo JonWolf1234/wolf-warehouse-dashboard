@@ -80,6 +80,14 @@
           </button>
 
           <button
+            class="button button-header"
+            id="certificatesButton"
+            type="button"
+          >
+          Certificates
+          </button>
+
+          <button
             class="button button-primary"
             id="refreshButton"
             type="button"
@@ -326,7 +334,15 @@
                       Due back
                     </button>
                   </th>
+
+                  <th class="more-heading">
+                    <span class="visually-hidden">
+                      More options
+                    </span>
+                  </th>
+
                 </tr>
+                
               </thead>
 
               <tbody id="jobsBody"></tbody>
@@ -415,43 +431,329 @@
       </form>
     </div>
 
-    <template id="jobRowTemplate">
-      <tr>
-        <td class="status-cell">
-          <span class="status-pill"></span>
-        </td>
+<div
+  class="certificate-modal"
+  id="certificateModal"
+  hidden
+>
+  <div
+    class="certificate-modal-backdrop"
+    data-certificate-close
+  ></div>
 
-        <td class="job-cell">
-          <a
-            class="job-link"
-            target="_blank"
-            rel="noopener noreferrer"
+  <section
+    class="certificate-modal-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="certificateModalTitle"
+  >
+    <div class="certificate-modal-header">
+      <div>
+        <p class="eyebrow">
+          Certificate library
+        </p>
+
+        <h2 id="certificateModalTitle">
+          Upload motor certificate
+        </h2>
+      </div>
+
+      <button
+        class="certificate-modal-close"
+        type="button"
+        aria-label="Close certificate upload"
+        data-certificate-close
+      >
+        ×
+      </button>
+    </div>
+
+    <form
+      id="certificateUploadForm"
+      class="certificate-upload-form"
+    >
+      <label class="field">
+        <span>Asset number</span>
+
+        <input
+          id="certificateAssetNumber"
+          name="assetNumber"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="e.g. 1019002"
+          required
+        />
+      </label>
+
+      <label class="field">
+        <span>Description</span>
+
+        <input
+          id="certificateDescription"
+          name="description"
+          type="text"
+          autocomplete="off"
+          placeholder="e.g. 250kg motor cert"
+          value="motor certificate"
+          required
+        />
+      </label>
+
+      <label class="certificate-file-field">
+        <span>PDF certificate</span>
+
+        <input
+          id="certificateFile"
+          name="certificate"
+          type="file"
+          accept="application/pdf,.pdf"
+          required
+        />
+
+        <span class="certificate-file-drop">
+          <strong>Choose a PDF</strong>
+          <small id="certificateFileName">
+            No file selected
+          </small>
+        </span>
+      </label>
+
+      <div class="certificate-filename-preview">
+        <span>Final filename</span>
+
+        <strong id="certificateFilenamePreview">
+          Asset number motor certificate.pdf
+        </strong>
+      </div>
+
+      <p
+        class="certificate-form-message"
+        id="certificateFormMessage"
+        aria-live="polite"
+      ></p>
+
+      <div class="certificate-modal-actions">
+        <button
+          class="button"
+          type="button"
+          data-certificate-close
+        >
+          Cancel
+        </button>
+
+        <button
+          class="button button-primary"
+          id="certificateUploadButton"
+          type="submit"
+        >
+          Upload certificate
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+
+<template id="jobRowTemplate">
+  <tr class="job-row">
+    <td class="status-cell">
+      <span class="status-pill"></span>
+    </td>
+
+    <td class="job-cell">
+      <a
+        class="job-link"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <strong class="job-reference"></strong>
+        <span class="job-name"></span>
+      </a>
+    </td>
+
+    <td class="client-cell optional-client"></td>
+    <td class="items-cell number"></td>
+
+    <td class="prepared-cell">
+      <div class="prepared-copy">
+        <strong></strong>
+        <span></span>
+      </div>
+
+      <div class="progress-track">
+        <span></span>
+      </div>
+    </td>
+
+    <td class="prep-cell date-cell"></td>
+    <td class="load-cell date-cell"></td>
+    <td class="return-cell date-cell"></td>
+
+    <td class="expand-cell">
+      <button
+        class="expand-button"
+        type="button"
+        aria-expanded="false"
+        aria-label="Show more options for this job"
+      >
+        +
+      </button>
+    </td>
+  </tr>
+
+  <tr class="job-actions-row" hidden>
+    <td colspan="9">
+      <div class="job-actions-panel">
+        <aside class="job-actions-navigation">
+          <p class="eyebrow">More actions</p>
+
+          <button
+            class="job-action-tab is-active"
+            type="button"
+            data-action-panel="warehouse-notes"
           >
-            <strong class="job-reference"></strong>
-            <span class="job-name"></span>
-          </a>
-        </td>
+            <strong>Warehouse notes</strong>
+            <span>Internal job information</span>
+          </button>
 
-        <td class="client-cell optional-client"></td>
+          <button
+            class="job-action-tab"
+            type="button"
+            data-action-panel="motor-certificates"
+          >
+            <strong>Motor certificates</strong>
+            <span>Find and send PDFs</span>
+          </button>
+        </aside>
 
-        <td class="items-cell number"></td>
+        <div class="job-actions-content">
+          <section
+            class="job-action-view is-active"
+            data-action-view="warehouse-notes"
+          >
+            <div class="job-action-heading">
+              <div>
+                <p class="eyebrow">Warehouse</p>
+                <h3>Job notes</h3>
+              </div>
 
-        <td class="prepared-cell">
-          <div class="prepared-copy">
-            <strong></strong>
-            <span></span>
-          </div>
+              <span class="action-job-reference"></span>
+            </div>
 
-          <div class="progress-track">
-            <span></span>
-          </div>
-        </td>
+            <label class="action-field">
+              <span>Warehouse notes</span>
 
-        <td class="prep-cell date-cell"></td>
-        <td class="load-cell date-cell"></td>
-        <td class="return-cell date-cell"></td>
-      </tr>
-    </template>
+              <textarea
+                class="warehouse-notes-input"
+                rows="7"
+                placeholder="Add notes for the warehouse team…"
+              ></textarea>
+            </label>
+
+            <div class="job-action-footer">
+              <p class="warehouse-notes-message"></p>
+
+              <button
+                class="button save-warehouse-notes"
+                type="button"
+              >
+                Save notes
+              </button>
+            </div>
+          </section>
+
+          <section
+            class="job-action-view"
+            data-action-view="motor-certificates"
+          >
+            <div class="job-action-heading">
+              <div>
+                <p class="eyebrow">Documentation</p>
+                <h3>Motor certificates</h3>
+              </div>
+
+              <span class="action-job-reference"></span>
+            </div>
+
+            <div class="certificate-action-grid">
+              <div>
+                <label class="action-field">
+                  <span>Motor serial numbers</span>
+
+                  <textarea
+                    class="motor-serial-input"
+                    rows="8"
+                    placeholder="Enter one serial number per line&#10;&#10;1017196&#10;1017206&#10;1019002"
+                  ></textarea>
+                </label>
+
+                <p class="action-help">
+                  You may also paste a copied block from Current RMS. Duplicate numbers are removed automatically.
+                </p>
+
+                <button
+                  class="button find-job-certificates"
+                  type="button"
+                >
+                  Find certificates
+                </button>
+              </div>
+
+              <div class="certificate-results-panel">
+                <div class="certificate-results-empty">
+                  <strong>No search completed</strong>
+                  <span>
+                    Enter the motor serial numbers and click Find certificates.
+                  </span>
+                </div>
+
+                <div
+                  class="certificate-results"
+                  hidden
+                >
+                  <div class="certificate-result-summary">
+                    <strong class="certificate-result-count">
+                      0 of 0 found
+                    </strong>
+
+                    <span class="certificate-result-message"></span>
+                  </div>
+
+                  <div class="certificate-result-list"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="certificate-email-section">
+              <label class="action-field">
+                <span>Email certificates to</span>
+
+                <input
+                  class="certificate-email-input"
+                  type="email"
+                  placeholder="recipient@example.com"
+                  autocomplete="email"
+                />
+              </label>
+
+              <button
+                class="button button-primary send-job-certificates"
+                type="button"
+                disabled
+              >
+                Send certificates
+              </button>
+            </div>
+
+            <p class="certificate-send-message">
+              Email sending will be connected after the certificate search is confirmed.
+            </p>
+          </section>
+        </div>
+      </div>
+    </td>
+  </tr>
+</template>
 
     <script src="config.js"></script>
     <script src="theme.js"></script>
