@@ -15,6 +15,11 @@ import {
   getWarehouseJobs
 } from "./src/current-rms.js";
 
+import {
+  getRecentCurrentRmsWebhooks,
+  recordCurrentRmsWebhook
+} from "./src/current-rms-webhooks.js";
+
 import { mockJobs } from "./src/mock-data.js";
 
 const app = express();
@@ -535,6 +540,83 @@ app.get(
     } catch (error) {
       next(error);
     }
+  }
+);
+
+
+/* =========================================================
+   CURRENT RMS WEBHOOK RECEIVER
+   ========================================================= */
+
+app.post(
+  "/api/webhooks/current-rms",
+  async (
+    request,
+    response
+  ) => {
+    const configuredSecret =
+      process.env
+        .CURRENT_RMS_WEBHOOK_SECRET
+        ?.trim();
+
+    const suppliedSecret =
+      String(
+        request.query.secret ||
+        request.get(
+          "X-Webhook-Secret"
+        ) ||
+        ""
+      ).trim();
+
+    if (
+      !configuredSecret ||
+      suppliedSecret !== configuredSecret
+    ) {
+      return response
+        .status(401)
+        .json({
+          error:
+            "Invalid webhook secret."
+        });
+    }
+
+    const event =
+      recordCurrentRmsWebhook(
+        request.body
+      );
+
+    return response
+      .status(202)
+      .json({
+        accepted: true,
+
+        opportunityId:
+          event.opportunityId,
+
+        actionType:
+          event.actionType,
+
+        possibleAssetCount:
+          event.possibleAssets.length
+      });
+  }
+);
+
+/*
+ * Temporary diagnostic endpoint.
+ * Protected by the normal dashboard password.
+ */
+app.get(
+  "/api/webhooks/current-rms/recent",
+  requireDashboardKey,
+  (
+    request,
+    response
+  ) => {
+    response.json({
+      events:
+        getRecentCurrentRmsWebhooks()
+    });
   }
 );
 
