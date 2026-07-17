@@ -5,7 +5,7 @@ import {
   isRelevantToDateRange,
   normaliseOpportunity,
   opportunityLooksActive,
-  scheduleDates
+  scheduleDates,
   warehouseItemDiagnostics
 } from "./normalise.js";
 
