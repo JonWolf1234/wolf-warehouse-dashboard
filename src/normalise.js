@@ -51,55 +51,127 @@ const EXCLUDED_ITEM_WORDS = [
 ];
 
 export function unwrapRecord(value) {
-  if (!value || typeof value !== "object") return {};
-  if (value.attributes && typeof value.attributes === "object") {
-    return { id: value.id, ...value.attributes, relationships: value.relationships };
+  if (!value || typeof value !== "object") {
+    return {};
   }
+
+  if (
+    value.attributes &&
+    typeof value.attributes === "object"
+  ) {
+    return {
+      id: value.id,
+      ...value.attributes,
+      relationships: value.relationships
+    };
+  }
+
   return value;
 }
 
-export function extractCollection(payload, preferredKeys = []) {
-  if (Array.isArray(payload)) return payload.map(unwrapRecord);
-  if (!payload || typeof payload !== "object") return [];
-
-  for (const key of preferredKeys) {
-    if (Array.isArray(payload[key])) return payload[key].map(unwrapRecord);
+export function extractCollection(
+  payload,
+  preferredKeys = []
+) {
+  if (Array.isArray(payload)) {
+    return payload.map(unwrapRecord);
   }
 
-  if (Array.isArray(payload.data)) return payload.data.map(unwrapRecord);
+  if (
+    !payload ||
+    typeof payload !== "object"
+  ) {
+    return [];
+  }
+
+  for (const key of preferredKeys) {
+    if (Array.isArray(payload[key])) {
+      return payload[key].map(unwrapRecord);
+    }
+  }
+
+  if (Array.isArray(payload.data)) {
+    return payload.data.map(unwrapRecord);
+  }
 
   for (const value of Object.values(payload)) {
-    if (Array.isArray(value)) return value.map(unwrapRecord);
+    if (Array.isArray(value)) {
+      return value.map(unwrapRecord);
+    }
   }
 
   return [];
 }
 
-export function extractSingle(payload, preferredKeys = []) {
-  if (!payload || typeof payload !== "object") return {};
-  for (const key of preferredKeys) {
-    if (payload[key] && typeof payload[key] === "object") return unwrapRecord(payload[key]);
+export function extractSingle(
+  payload,
+  preferredKeys = []
+) {
+  if (
+    !payload ||
+    typeof payload !== "object"
+  ) {
+    return {};
   }
-  if (payload.data && !Array.isArray(payload.data)) return unwrapRecord(payload.data);
+
+  for (const key of preferredKeys) {
+    if (
+      payload[key] &&
+      typeof payload[key] === "object"
+    ) {
+      return unwrapRecord(payload[key]);
+    }
+  }
+
+  if (
+    payload.data &&
+    !Array.isArray(payload.data)
+  ) {
+    return unwrapRecord(payload.data);
+  }
+
   return unwrapRecord(payload);
 }
 
 function valueAtPath(source, path) {
-  return path.split(".").reduce((current, part) => current?.[part], source);
+  return path
+    .split(".")
+    .reduce(
+      (current, part) =>
+        current?.[part],
+      source
+    );
 }
 
 function firstValue(source, paths) {
   for (const path of paths) {
-    const value = valueAtPath(source, path);
-    if (value !== undefined && value !== null && value !== "") return value;
+    const value = valueAtPath(
+      source,
+      path
+    );
+
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== ""
+    ) {
+      return value;
+    }
   }
+
   return null;
 }
 
 function numeric(value) {
-  if (typeof value === "boolean") return value ? 1 : 0;
+  if (typeof value === "boolean") {
+    return value ? 1 : 0;
+  }
+
   const number = Number(value);
-  return Number.isFinite(number) ? number : 0;
+
+  return Number.isFinite(number)
+    ? number
+    : 0;
 }
 
 function normalisedText(value) {
@@ -110,10 +182,20 @@ function normalisedText(value) {
 }
 
 function firstDate(record, paths) {
-  const value = firstValue(record, paths);
-  if (!value) return null;
+  const value = firstValue(
+    record,
+    paths
+  );
+
+  if (!value) {
+    return null;
+  }
+
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+
+  return Number.isNaN(parsed.getTime())
+    ? null
+    : parsed.toISOString();
 }
 
 function itemDescriptor(item) {
@@ -141,24 +223,23 @@ function isPhysicalRentalItem(rawItem) {
   }
 
   const opportunityItemType = String(
-    item.opportunity_item_type_name ||
-    ""
+    item.opportunity_item_type_name || ""
   )
     .trim()
     .toLowerCase();
 
   const itemType = String(
     item.item_type ||
-    item.item_type_name ||
-    ""
+      item.item_type_name ||
+      ""
   )
     .trim()
     .toLowerCase();
 
   const transactionType = String(
     item.transaction_type_name ||
-    item.transaction_type ||
-    ""
+      item.transaction_type ||
+      ""
   )
     .trim()
     .toLowerCase();
@@ -227,10 +308,6 @@ function isPhysicalRentalItem(rawItem) {
     /*
      * Only count a manually entered text line when it is an
      * actual rental transaction.
-     *
-     * Your Current RMS diagnostic showed rental items as:
-     * transaction_type: 1
-     * transaction_type_name: "Rental"
      */
     const isRentalTransaction =
       item.transaction_type === 1 ||
@@ -264,18 +341,23 @@ function isPhysicalRentalItem(rawItem) {
 
   /*
    * Do not use a broad quantity-only fallback.
-   * Unknown lines are safer to exclude than to count warehouse
-   * notes as equipment.
    */
   return false;
 }
 
 function quantityForItem(item) {
   for (const field of TOTAL_QUANTITY_FIELDS) {
-    if (item[field] !== undefined && item[field] !== null) {
-      return Math.max(0, numeric(item[field]));
+    if (
+      item[field] !== undefined &&
+      item[field] !== null
+    ) {
+      return Math.max(
+        0,
+        numeric(item[field])
+      );
     }
   }
+
   return 0;
 }
 
@@ -287,15 +369,26 @@ function assetArray(item) {
     item.allocated_assets,
     item.stock_levels
   ];
+
   return candidates.find(Array.isArray) ?? [];
 }
 
 function statusLooksPrepared(value) {
-  const status = normalisedText(value).replaceAll("_", " ");
-  return PREP_STATES.some((candidate) => status.includes(candidate.replaceAll("_", " ")));
+  const status = normalisedText(value)
+    .replaceAll("_", " ");
+
+  return PREP_STATES.some(
+    (candidate) =>
+      status.includes(
+        candidate.replaceAll("_", " ")
+      )
+  );
 }
 
-function preparedForItem(rawItem, totalQuantity) {
+function preparedForItem(
+  rawItem,
+  totalQuantity
+) {
   const item = unwrapRecord(rawItem);
 
   /*
@@ -307,20 +400,26 @@ function preparedForItem(rawItem, totalQuantity) {
         item[field] !== undefined &&
         item[field] !== null
     )
-    .map((field) => numeric(item[field]));
+    .map(
+      (field) =>
+        numeric(item[field])
+    );
 
   if (directValues.length) {
     return {
       quantity: Math.min(
         totalQuantity,
-        Math.max(...directValues, 0)
+        Math.max(
+          ...directValues,
+          0
+        )
       ),
       quality: "exact"
     };
   }
 
   /*
-   * Next inspect any individual asset records.
+   * Next inspect individual asset records.
    */
   const assets = assetArray(item);
 
@@ -331,15 +430,18 @@ function preparedForItem(rawItem, totalQuantity) {
     for (const rawAsset of assets) {
       const asset = unwrapRecord(rawAsset);
 
-      const state = firstValue(asset, [
-        "status_name",
-        "state_name",
-        "warehouse_status",
-        "scan_status",
-        "item_status",
-        "status",
-        "state"
-      ]);
+      const state = firstValue(
+        asset,
+        [
+          "status_name",
+          "state_name",
+          "warehouse_status",
+          "scan_status",
+          "item_status",
+          "status",
+          "state"
+        ]
+      );
 
       const booleanPrepared = [
         asset.prepared,
@@ -363,7 +465,9 @@ function preparedForItem(rawItem, totalQuantity) {
       ) {
         quantity += Math.max(
           1,
-          numeric(asset.quantity || 1)
+          numeric(
+            asset.quantity || 1
+          )
         );
       }
     }
@@ -379,29 +483,21 @@ function preparedForItem(rawItem, totalQuantity) {
     }
   }
 
-  /*
-   * Current RMS supplies the warehouse state on each opportunity
-   * item using status_name, for example:
-   *
-   * Reserved
-   * Allocated
-   * Prepared
-   * Booked Out
-   * Checked In
-   * Completed
-   */
-  const itemStatus = firstValue(item, [
-    "status_name",
-    "state_name",
-    "warehouse_status_name",
-    "prep_status_name",
-    "item_status_name",
-    "warehouse_status",
-    "prep_status",
-    "item_status",
-    "state",
-    "status"
-  ]);
+  const itemStatus = firstValue(
+    item,
+    [
+      "status_name",
+      "state_name",
+      "warehouse_status_name",
+      "prep_status_name",
+      "item_status_name",
+      "warehouse_status",
+      "prep_status",
+      "item_status",
+      "state",
+      "status"
+    ]
+  );
 
   /*
    * Prepared and all later warehouse states count as prepared.
@@ -421,13 +517,16 @@ function preparedForItem(rawItem, totalQuantity) {
   }
 
   /*
-   * Some API responses may contain a preparation percentage.
+   * Some responses may contain a preparation percentage.
    */
   const percent = numeric(
-    firstValue(item, [
-      "prepared_percentage",
-      "prep_percentage"
-    ])
+    firstValue(
+      item,
+      [
+        "prepared_percentage",
+        "prep_percentage"
+      ]
+    )
   );
 
   if (percent > 0) {
@@ -435,7 +534,10 @@ function preparedForItem(rawItem, totalQuantity) {
       quantity: Math.min(
         totalQuantity,
         Math.round(
-          (totalQuantity * percent) / 100
+          (
+            totalQuantity *
+            percent
+          ) / 100
         )
       ),
       quality: "status-derived"
@@ -443,9 +545,7 @@ function preparedForItem(rawItem, totalQuantity) {
   }
 
   /*
-   * If Current RMS returned a named status such as Reserved or
-   * Allocated, the mapping is working and the prepared quantity
-   * is genuinely zero.
+   * A recognised non-prepared state means zero prepared.
    */
   if (
     item.status_name ||
@@ -460,55 +560,126 @@ function preparedForItem(rawItem, totalQuantity) {
     };
   }
 
-  /*
-   * No useful preparation information was present.
-   */
   return {
     quantity: 0,
     quality: "unavailable"
   };
 }
 
-function extractItems(opportunity, separatelyFetchedItems = []) {
+function extractItems(
+  opportunity,
+  separatelyFetchedItems = []
+) {
   const directCandidates = [
     opportunity.opportunity_items,
     opportunity.items,
     opportunity.rental_items,
     opportunity.included_items
   ];
-  const direct = directCandidates.find(Array.isArray);
-  if (direct) return direct.map(unwrapRecord);
-  return separatelyFetchedItems.map(unwrapRecord);
+
+  const direct =
+    directCandidates.find(
+      Array.isArray
+    );
+
+  if (direct) {
+    return direct.map(unwrapRecord);
+  }
+
+  return separatelyFetchedItems.map(
+    unwrapRecord
+  );
 }
 
 function combineQuality(qualities) {
-  if (qualities.includes("exact")) return "exact";
-  if (qualities.includes("status-derived")) return "status-derived";
+  if (qualities.includes("exact")) {
+    return "exact";
+  }
+
+  if (
+    qualities.includes(
+      "status-derived"
+    )
+  ) {
+    return "status-derived";
+  }
+
   return "unavailable";
 }
 
 export function scheduleDates(opportunity) {
   return {
-    prepAt: firstDate(opportunity, ["prep_starts_at", "prep_start_at", "prep_date"]),
-    prepEndsAt: firstDate(opportunity, ["prep_ends_at", "prep_end_at"]),
-    loadAt: firstDate(opportunity, ["load_starts_at", "load_start_at"]),
-    loadEndsAt: firstDate(opportunity, ["load_ends_at", "load_end_at"]),
-    deliverAt: firstDate(opportunity, ["deliver_starts_at", "delivery_starts_at"]),
-    showAt: firstDate(opportunity, ["show_starts_at", "starts_at", "start_at"]),
-    returnAt: firstDate(opportunity, [
-      "unload_starts_at",
-      "collect_starts_at",
-      "collection_starts_at",
-      "ends_at",
-      "end_at"
-    ]),
-    returnEndsAt: firstDate(opportunity, [
-      "unload_ends_at",
-      "collect_ends_at",
-      "collection_ends_at",
-      "ends_at",
-      "end_at"
-    ])
+    prepAt: firstDate(
+      opportunity,
+      [
+        "prep_starts_at",
+        "prep_start_at",
+        "prep_date"
+      ]
+    ),
+
+    prepEndsAt: firstDate(
+      opportunity,
+      [
+        "prep_ends_at",
+        "prep_end_at"
+      ]
+    ),
+
+    loadAt: firstDate(
+      opportunity,
+      [
+        "load_starts_at",
+        "load_start_at"
+      ]
+    ),
+
+    loadEndsAt: firstDate(
+      opportunity,
+      [
+        "load_ends_at",
+        "load_end_at"
+      ]
+    ),
+
+    deliverAt: firstDate(
+      opportunity,
+      [
+        "deliver_starts_at",
+        "delivery_starts_at"
+      ]
+    ),
+
+    showAt: firstDate(
+      opportunity,
+      [
+        "show_starts_at",
+        "starts_at",
+        "start_at"
+      ]
+    ),
+
+    returnAt: firstDate(
+      opportunity,
+      [
+        "unload_starts_at",
+        "collect_starts_at",
+        "collection_starts_at",
+        "ends_at",
+        "end_at"
+      ]
+    ),
+
+    returnEndsAt: firstDate(
+      opportunity,
+      [
+        "unload_ends_at",
+        "collect_ends_at",
+        "collection_ends_at",
+        "ends_at",
+        "end_at"
+      ]
+    )
   };
 }
 
@@ -517,7 +688,8 @@ export function normaliseOpportunity(
   separatelyFetchedItems,
   options = {}
 ) {
-  const opportunity = unwrapRecord(rawOpportunity);
+  const opportunity =
+    unwrapRecord(rawOpportunity);
 
   const items = extractItems(
     opportunity,
@@ -530,53 +702,8 @@ export function normaliseOpportunity(
   const qualities = [];
 
   for (const item of items) {
-    const quantity = quantityForItem(item);
-
-
-const possibleTextLine =
-  item.is_text === true ||
-  String(item.item_type || "").toLowerCase() === "text" ||
-  String(item.item_type_name || "").toLowerCase() === "text" ||
-  String(item.opportunity_item_type_name || "").toLowerCase() === "text" ||
-  (
-    !item.product_id &&
-    !item.stock_level_id &&
-    quantity > 0
-  );
-
-if (possibleTextLine) {
-  console.log(
-    "[Current RMS text item]",
-    JSON.stringify({
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      quantity: item.quantity,
-      item_type: item.item_type,
-      item_type_name: item.item_type_name,
-      opportunity_item_type: item.opportunity_item_type,
-      opportunity_item_type_name: item.opportunity_item_type_name,
-      transaction_type: item.transaction_type,
-      transaction_type_name: item.transaction_type_name,
-      parent_id: item.parent_id,
-      parent_item_id: item.parent_item_id,
-      parent_opportunity_item_id: item.parent_opportunity_item_id,
-      source_type: item.source_type,
-      product_id: item.product_id,
-      stock_level_id: item.stock_level_id,
-      status: item.status,
-      status_name: item.status_name,
-      depth: item.depth,
-      depth_padding: item.depth_padding,
-      position: item.position,
-      is_text: item.is_text,
-      is_note: item.is_note,
-      note: item.note,
-      warehouse_note: item.warehouse_note
-    })
-  );
-}
-
+    const quantity =
+      quantityForItem(item);
 
     if (quantity <= 0) {
       continue;
@@ -584,13 +711,18 @@ if (possibleTextLine) {
 
     totalItems += quantity;
 
-    const prepared = preparedForItem(
-      item,
-      quantity
-    );
+    const prepared =
+      preparedForItem(
+        item,
+        quantity
+      );
 
-    preparedItems += prepared.quantity;
-    qualities.push(prepared.quality);
+    preparedItems +=
+      prepared.quantity;
+
+    qualities.push(
+      prepared.quality
+    );
   }
 
   preparedItems = Math.min(
@@ -656,14 +788,6 @@ if (possibleTextLine) {
         )
       : null;
 
-  /*
-   * Current RMS uses state_name for the commercial
-   * opportunity state, such as:
-   *
-   * Order
-   * Quote
-   * Provisional
-   */
   const opportunityState =
     firstValue(
       opportunity,
@@ -673,15 +797,6 @@ if (possibleTextLine) {
       ]
     );
 
-  /*
-   * Current RMS uses status_name for the operational
-   * warehouse status, such as:
-   *
-   * Active
-   * Prepared
-   * Booked Out
-   * Checked In
-   */
   const opportunityStatus =
     firstValue(
       opportunity,
@@ -715,19 +830,12 @@ if (possibleTextLine) {
     customer:
       customer || "",
 
-    /*
-     * New separate values used by the dropdown.
-     */
     opportunityState:
       opportunityState || "",
 
     opportunityStatus:
       opportunityStatus || "",
 
-    /*
-     * Keep these older fields for compatibility with
-     * the existing search and display code.
-     */
     status:
       opportunityStatus ||
       opportunityState ||
@@ -769,31 +877,110 @@ if (possibleTextLine) {
   };
 }
 
-export function opportunityLooksActive(rawOpportunity) {
-  const opportunity = unwrapRecord(rawOpportunity);
+export function opportunityLooksActive(
+  rawOpportunity
+) {
+  const opportunity =
+    unwrapRecord(rawOpportunity);
+
   const status = normalisedText(
-    firstValue(opportunity, ["status_name", "status", "state", "opportunity_status"])
+    firstValue(
+      opportunity,
+      [
+        "status_name",
+        "status",
+        "state",
+        "opportunity_status"
+      ]
+    )
   );
-  return !["cancelled", "canceled", "lost", "dead", "completed", "complete"].some((word) =>
-    status.includes(word)
+
+  return ![
+    "cancelled",
+    "canceled",
+    "lost",
+    "dead",
+    "completed",
+    "complete"
+  ].some(
+    (word) =>
+      status.includes(word)
   );
 }
 
-export function opportunityLooksLikeOrder(rawOpportunity) {
-  const opportunity = unwrapRecord(rawOpportunity);
-  const type = normalisedText(firstValue(opportunity, ["opportunity_type", "type_name", "type"]));
-  const status = normalisedText(firstValue(opportunity, ["status_name", "status", "state"]));
+export function opportunityLooksLikeOrder(
+  rawOpportunity
+) {
+  const opportunity =
+    unwrapRecord(rawOpportunity);
 
-  if (!type && !status) return true;
-  if (["quotation", "quote", "draft", "inquiry", "inquiry"].some((word) => type.includes(word))) return false;
-  if (type.includes("order")) return true;
-  if (["confirmed", "provisional", "reserved", "prepared", "booked_out"].some((word) => status.includes(word))) {
+  const type = normalisedText(
+    firstValue(
+      opportunity,
+      [
+        "opportunity_type",
+        "type_name",
+        "type"
+      ]
+    )
+  );
+
+  const status = normalisedText(
+    firstValue(
+      opportunity,
+      [
+        "status_name",
+        "status",
+        "state"
+      ]
+    )
+  );
+
+  if (!type && !status) {
     return true;
   }
+
+  if (
+    [
+      "quotation",
+      "quote",
+      "draft",
+      "inquiry"
+    ].some(
+      (word) =>
+        type.includes(word)
+    )
+  ) {
+    return false;
+  }
+
+  if (type.includes("order")) {
+    return true;
+  }
+
+  if (
+    [
+      "confirmed",
+      "provisional",
+      "reserved",
+      "prepared",
+      "booked_out"
+    ].some(
+      (word) =>
+        status.includes(word)
+    )
+  ) {
+    return true;
+  }
+
   return true;
 }
 
-export function isRelevantToDateRange(job, fromDate, toDate) {
+export function isRelevantToDateRange(
+  job,
+  fromDate,
+  toDate
+) {
   const from = new Date(
     `${fromDate}T00:00:00Z`
   ).getTime();
@@ -813,34 +1000,77 @@ export function isRelevantToDateRange(job, fromDate, toDate) {
     job.returnEndsAt
   ]
     .filter(Boolean)
-    .map((value) => new Date(value).getTime())
+    .map(
+      (value) =>
+        new Date(value).getTime()
+    )
     .filter(Number.isFinite);
 
   if (!values.length) {
     return false;
   }
 
-  const jobStartsAt = Math.min(...values);
-  const jobEndsAt = Math.max(...values);
+  const jobStartsAt =
+    Math.min(...values);
 
-  return jobStartsAt <= to && jobEndsAt >= from;
+  const jobEndsAt =
+    Math.max(...values);
+
+  return (
+    jobStartsAt <= to &&
+    jobEndsAt >= from
+  );
 }
 
-export function diagnosticSummary(rawOpportunity, separatelyFetchedItems = []) {
-  const opportunity = unwrapRecord(rawOpportunity);
-  const items = extractItems(opportunity, separatelyFetchedItems).slice(0, 5);
-  const interesting = /quantity|prep|prepared|book|check|return|status|state|asset|type|name|description/i;
+export function diagnosticSummary(
+  rawOpportunity,
+  separatelyFetchedItems = []
+) {
+  const opportunity =
+    unwrapRecord(rawOpportunity);
+
+  const allItems = extractItems(
+    opportunity,
+    separatelyFetchedItems
+  );
+
+  const items =
+    allItems.slice(0, 5);
+
+  const interesting =
+    /quantity|prep|prepared|book|check|return|status|state|asset|type|name|description/i;
 
   return {
-    opportunityKeys: Object.keys(opportunity).sort(),
-    itemCountDetected: extractItems(opportunity, separatelyFetchedItems).length,
-    sampleItems: items.map((item) =>
-      Object.fromEntries(
-        Object.entries(unwrapRecord(item))
-          .filter(([key, value]) => interesting.test(key) && typeof value !== "function")
-          .map(([key, value]) => [key, Array.isArray(value) ? value.slice(0, 3) : value])
+    opportunityKeys:
+      Object.keys(
+        opportunity
+      ).sort(),
+
+    itemCountDetected:
+      allItems.length,
+
+    sampleItems:
+      items.map((item) =>
+        Object.fromEntries(
+          Object.entries(
+            unwrapRecord(item)
+          )
+            .filter(
+              ([key, value]) =>
+                interesting.test(key) &&
+                typeof value !==
+                  "function"
+            )
+            .map(
+              ([key, value]) => [
+                key,
+                Array.isArray(value)
+                  ? value.slice(0, 3)
+                  : value
+              ]
+            )
+        )
       )
-    )
   };
 }
 
@@ -848,132 +1078,163 @@ export function warehouseItemDiagnostics(
   rawOpportunity,
   separatelyFetchedItems = []
 ) {
-  const opportunity = unwrapRecord(rawOpportunity);
+  const opportunity =
+    unwrapRecord(rawOpportunity);
 
   const rawItems = extractItems(
     opportunity,
     separatelyFetchedItems
   );
 
-  const itemResults = rawItems.map((rawItem) => {
-    const item = unwrapRecord(rawItem);
+  const itemResults = rawItems.map(
+    (rawItem) => {
+      const item =
+        unwrapRecord(rawItem);
 
-    const quantity = quantityForItem(item);
+      const quantity =
+        quantityForItem(item);
 
-    const included =
-      isPhysicalRentalItem(item);
+      const included =
+        isPhysicalRentalItem(item);
 
-    const prepared = included
-      ? preparedForItem(item, quantity)
-      : {
-          quantity: 0,
-          quality: "excluded"
-        };
+      const prepared = included
+        ? preparedForItem(
+            item,
+            quantity
+          )
+        : {
+            quantity: 0,
+            quality: "excluded"
+          };
 
-    const outstandingQuantity = included
-      ? Math.max(
-          0,
-          quantity - prepared.quantity
-        )
-      : 0;
+      const outstandingQuantity =
+        included
+          ? Math.max(
+              0,
+              quantity -
+                prepared.quantity
+            )
+          : 0;
 
-    return {
-      id:
-        item.id ??
-        item.opportunity_item_id ??
-        null,
+      return {
+        id:
+          item.id ??
+          item.opportunity_item_id ??
+          null,
 
-      name:
-        item.name ||
-        item.description ||
-        "(Unnamed line)",
+        name:
+          item.name ||
+          item.description ||
+          "(Unnamed line)",
 
-      description:
-        item.description || "",
+        description:
+          item.description || "",
 
-      itemType:
-        item.item_type ??
-        item.item_type_name ??
-        null,
+        itemType:
+          item.item_type ??
+          item.item_type_name ??
+          null,
 
-      opportunityItemType:
-        item.opportunity_item_type ??
-        null,
+        opportunityItemType:
+          item.opportunity_item_type ??
+          null,
 
-      opportunityItemTypeName:
-        item.opportunity_item_type_name ??
-        null,
+        opportunityItemTypeName:
+          item.opportunity_item_type_name ??
+          null,
 
-      transactionType:
-        item.transaction_type ??
-        null,
+        transactionType:
+          item.transaction_type ??
+          null,
 
-      transactionTypeName:
-        item.transaction_type_name ??
-        null,
+        transactionTypeName:
+          item.transaction_type_name ??
+          null,
 
-      status:
-        item.status ??
-        null,
+        status:
+          item.status ??
+          null,
 
-      statusName:
-        item.status_name ??
-        null,
+        statusName:
+          item.status_name ??
+          null,
 
-      productId:
-        item.product_id ??
-        null,
+        productId:
+          item.product_id ??
+          null,
 
-      stockLevelId:
-        item.stock_level_id ??
-        null,
+        stockLevelId:
+          item.stock_level_id ??
+          null,
 
-      parentId:
-        item.parent_id ??
-        item.parent_item_id ??
-        item.parent_opportunity_item_id ??
-        item.opportunity_item_parent_id ??
-        null,
+        parentId:
+          item.parent_id ??
+          item.parent_item_id ??
+          item.parent_opportunity_item_id ??
+          item.opportunity_item_parent_id ??
+          null,
 
-      quantity,
+        quantity,
 
-      preparedQuantity:
-  prepared.quantity,
+        preparedQuantity:
+          prepared.quantity,
 
-outstandingQuantity,
+        outstandingQuantity,
 
-preparationQuality:
-  prepared.quality,
+        preparationQuality:
+          prepared.quality,
 
-includedInDashboard:
-  included,
+        includedInDashboard:
+          included,
 
-rawQuantityFields: Object.fromEntries(
-  Object.entries(item).filter(([key]) => {
-    const lowerKey = key.toLowerCase();
+        rawQuantityFields:
+          Object.fromEntries(
+            Object.entries(item).filter(
+              ([key]) => {
+                const lowerKey =
+                  key.toLowerCase();
 
-    return (
-      lowerKey.includes("quantity") ||
-      lowerKey.includes("prepared") ||
-      lowerKey.includes("allocated") ||
-      lowerKey.includes("booked") ||
-      lowerKey.includes("checked") ||
-      lowerKey.includes("asset") ||
-      lowerKey.includes("status")
+                return (
+                  lowerKey.includes(
+                    "quantity"
+                  ) ||
+                  lowerKey.includes(
+                    "prepared"
+                  ) ||
+                  lowerKey.includes(
+                    "allocated"
+                  ) ||
+                  lowerKey.includes(
+                    "booked"
+                  ) ||
+                  lowerKey.includes(
+                    "checked"
+                  ) ||
+                  lowerKey.includes(
+                    "asset"
+                  ) ||
+                  lowerKey.includes(
+                    "status"
+                  )
+                );
+              }
+            )
+          )
+      };
+    }
+  );
+
+  const includedItems =
+    itemResults.filter(
+      (item) =>
+        item.includedInDashboard
     );
-  })
-)
-};
 
-  const includedItems = itemResults.filter(
-    (item) =>
-      item.includedInDashboard
-  );
-
-  const outstandingItems = includedItems.filter(
-    (item) =>
-      item.outstandingQuantity > 0
-  );
+  const outstandingItems =
+    includedItems.filter(
+      (item) =>
+        item.outstandingQuantity > 0
+    );
 
   return {
     opportunity: {
@@ -1012,7 +1273,9 @@ rawQuantityFields: Object.fromEntries(
         includedItems.reduce(
           (sum, item) =>
             sum +
-            Number(item.quantity || 0),
+            Number(
+              item.quantity || 0
+            ),
           0
         ),
 
@@ -1021,7 +1284,8 @@ rawQuantityFields: Object.fromEntries(
           (sum, item) =>
             sum +
             Number(
-              item.preparedQuantity || 0
+              item.preparedQuantity ||
+                0
             ),
           0
         ),
@@ -1031,7 +1295,8 @@ rawQuantityFields: Object.fromEntries(
           (sum, item) =>
             sum +
             Number(
-              item.outstandingQuantity || 0
+              item.outstandingQuantity ||
+                0
             ),
           0
         )
