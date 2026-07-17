@@ -6,6 +6,7 @@ import {
   normaliseOpportunity,
   opportunityLooksActive,
   scheduleDates
+  warehouseItemDiagnostics
 } from "./normalise.js";
 
 const API_BASE = "https://api.current-rms.com/api/v1";
@@ -1105,6 +1106,27 @@ export async function getOpportunityDiagnostics(
         );
 
   return diagnosticSummary(
+    detail,
+    items
+  );
+}
+
+export async function getWarehouseItemDiagnostics(
+  opportunityId
+) {
+  const detail =
+    await retrieveOpportunity(
+      opportunityId
+    );
+
+  const items =
+    hasEmbeddedItems(detail)
+      ? []
+      : await retrieveOpportunityItems(
+          opportunityId
+        );
+
+  return warehouseItemDiagnostics(
     detail,
     items
   );

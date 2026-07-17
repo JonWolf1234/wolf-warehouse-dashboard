@@ -5,7 +5,11 @@ import compression from "compression";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-import { getOpportunityDiagnostics, getWarehouseJobs } from "./src/current-rms.js";
+import {
+  getOpportunityDiagnostics,
+  getWarehouseItemDiagnostics,
+  getWarehouseJobs
+} from "./src/current-rms.js";
 import { mockJobs } from "./src/mock-data.js";
 
 const app = express();
@@ -150,6 +154,46 @@ app.get("/api/diagnostics/opportunity/:id", requireDashboardKey, async (req, res
     next(error);
   }
 });
+
+app.get(
+  "/api/diagnostics/outstanding/:id",
+  requireDashboardKey,
+  async (request, response) => {
+    if (
+      String(
+        process.env.ENABLE_DIAGNOSTICS ??
+        "false"
+      ).toLowerCase() !== "true"
+    ) {
+      return response.status(404).json({
+        error:
+          "Diagnostics are disabled."
+      });
+    }
+
+    try {
+      const result =
+        await getWarehouseItemDiagnostics(
+          request.params.id
+        );
+
+      return response.json(result);
+    } catch (error) {
+      console.error(
+        "[Warehouse diagnostic]",
+        error
+      );
+
+      return response.status(
+        error.status || 500
+      ).json({
+        error:
+          error.message ||
+          "The diagnostic could not be produced."
+      });
+    }
+  }
+);
 
 app.use(express.static(path.join(__dirname, "docs")));
 app.use((req, res, next) => {

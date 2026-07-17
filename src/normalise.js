@@ -843,3 +843,193 @@ export function diagnosticSummary(rawOpportunity, separatelyFetchedItems = []) {
     )
   };
 }
+
+export function warehouseItemDiagnostics(
+  rawOpportunity,
+  separatelyFetchedItems = []
+) {
+  const opportunity = unwrapRecord(rawOpportunity);
+
+  const rawItems = extractItems(
+    opportunity,
+    separatelyFetchedItems
+  );
+
+  const itemResults = rawItems.map((rawItem) => {
+    const item = unwrapRecord(rawItem);
+
+    const quantity = quantityForItem(item);
+
+    const included =
+      isPhysicalRentalItem(item);
+
+    const prepared = included
+      ? preparedForItem(item, quantity)
+      : {
+          quantity: 0,
+          quality: "excluded"
+        };
+
+    const outstandingQuantity = included
+      ? Math.max(
+          0,
+          quantity - prepared.quantity
+        )
+      : 0;
+
+    return {
+      id:
+        item.id ??
+        item.opportunity_item_id ??
+        null,
+
+      name:
+        item.name ||
+        item.description ||
+        "(Unnamed line)",
+
+      description:
+        item.description || "",
+
+      itemType:
+        item.item_type ??
+        item.item_type_name ??
+        null,
+
+      opportunityItemType:
+        item.opportunity_item_type ??
+        null,
+
+      opportunityItemTypeName:
+        item.opportunity_item_type_name ??
+        null,
+
+      transactionType:
+        item.transaction_type ??
+        null,
+
+      transactionTypeName:
+        item.transaction_type_name ??
+        null,
+
+      status:
+        item.status ??
+        null,
+
+      statusName:
+        item.status_name ??
+        null,
+
+      productId:
+        item.product_id ??
+        null,
+
+      stockLevelId:
+        item.stock_level_id ??
+        null,
+
+      parentId:
+        item.parent_id ??
+        item.parent_item_id ??
+        item.parent_opportunity_item_id ??
+        item.opportunity_item_parent_id ??
+        null,
+
+      quantity,
+
+      preparedQuantity:
+        prepared.quantity,
+
+      outstandingQuantity,
+
+      preparationQuality:
+        prepared.quality,
+
+      includedInDashboard:
+        included
+    };
+  });
+
+  const includedItems = itemResults.filter(
+    (item) =>
+      item.includedInDashboard
+  );
+
+  const outstandingItems = includedItems.filter(
+    (item) =>
+      item.outstandingQuantity > 0
+  );
+
+  return {
+    opportunity: {
+      id:
+        opportunity.id ??
+        opportunity.opportunity_id ??
+        null,
+
+      number:
+        opportunity.number ??
+        opportunity.reference ??
+        null,
+
+      subject:
+        opportunity.subject ??
+        opportunity.name ??
+        null,
+
+      stateName:
+        opportunity.state_name ??
+        null,
+
+      statusName:
+        opportunity.status_name ??
+        null
+    },
+
+    totals: {
+      rawLines:
+        itemResults.length,
+
+      includedLines:
+        includedItems.length,
+
+      totalQuantity:
+        includedItems.reduce(
+          (sum, item) =>
+            sum +
+            Number(item.quantity || 0),
+          0
+        ),
+
+      preparedQuantity:
+        includedItems.reduce(
+          (sum, item) =>
+            sum +
+            Number(
+              item.preparedQuantity || 0
+            ),
+          0
+        ),
+
+      outstandingQuantity:
+        includedItems.reduce(
+          (sum, item) =>
+            sum +
+            Number(
+              item.outstandingQuantity || 0
+            ),
+          0
+        )
+    },
+
+    outstandingItems,
+
+    includedItems,
+
+    excludedItems:
+      itemResults.filter(
+        (item) =>
+          !item.includedInDashboard
+      )
+  };
+}
