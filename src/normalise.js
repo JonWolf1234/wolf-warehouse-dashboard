@@ -136,80 +136,138 @@ function isPhysicalRentalItem(rawItem) {
   const item = unwrapRecord(rawItem);
   const quantity = quantityForItem(item);
 
+  if (quantity <= 0) {
+    return false;
+  }
+
+  const opportunityItemType = String(
+    item.opportunity_item_type_name ||
+    ""
+  )
+    .trim()
+    .toLowerCase();
+
+  const itemType = String(
+    item.item_type ||
+    item.item_type_name ||
+    ""
+  )
+    .trim()
+    .toLowerCase();
+
+  const transactionType = String(
+    item.transaction_type_name ||
+    item.transaction_type ||
+    ""
+  )
+    .trim()
+    .toLowerCase();
+
   /*
-   * Never count structural rows such as groups and headings.
+   * Structural rows must never be counted.
    */
   if (
     item.is_group === true ||
     item.is_heading === true ||
     item.group === true ||
-    item.opportunity_item_type_name === "Group"
+    opportunityItemType === "group" ||
+    opportunityItemType === "heading"
   ) {
     return false;
   }
 
   /*
-   * Continue excluding services, labour, transport and sales.
+   * Exclude service, labour, transport and sale lines.
    */
   if (
     item.is_service === true ||
     item.is_labour === true ||
     item.is_labor === true ||
     item.is_transport === true ||
-    item.is_sale === true
+    item.is_sale === true ||
+    transactionType === "sale" ||
+    transactionType === "service"
   ) {
     return false;
   }
 
-  const descriptor = itemDescriptor(item);
-
   /*
-   * Exclude clearly non-equipment lines.
+   * Warehouse notes and product notes are generally child
+   * text rows attached to another opportunity item.
    */
-  if (
-    EXCLUDED_ITEM_WORDS.some(
-      (word) => descriptor.includes(word)
-    )
-  ) {
-    return false;
-  }
+  const parentItemId =
+    item.parent_id ??
+    item.parent_item_id ??
+    item.parent_opportunity_item_id ??
+    item.opportunity_item_parent_id ??
+    item.parent_opportunity_item?.id ??
+    null;
+
+  const isChildItem =
+    parentItemId !== null &&
+    parentItemId !== undefined &&
+    parentItemId !== "";
 
   /*
-   * Current RMS text items can be used for manually entered equipment.
-   *
-   * Count them when they have a positive quantity. This prevents
-   * ordinary notes and descriptive text rows from being counted.
+   * Recognise text/manual lines.
    */
   const isTextItem =
     item.is_text === true ||
-    descriptor.includes("text");
+    itemType === "text" ||
+    opportunityItemType === "text";
 
   if (isTextItem) {
-    return quantity > 0;
+    /*
+     * Do not count notes attached beneath products.
+     */
+    if (isChildItem) {
+      return false;
+    }
+
+    /*
+     * Only count a manually entered text line when it is an
+     * actual rental transaction.
+     *
+     * Your Current RMS diagnostic showed rental items as:
+     * transaction_type: 1
+     * transaction_type_name: "Rental"
+     */
+    const isRentalTransaction =
+      item.transaction_type === 1 ||
+      item.transaction_type === "1" ||
+      transactionType === "rental";
+
+    return isRentalTransaction;
   }
 
   /*
-   * Normal products, accessories and rental stock.
+   * Normal Current RMS products and accessories.
    */
-  if (
+  const isProductOrAccessory =
     item.is_item === true ||
     item.is_accessory === true ||
     item.is_rental === true ||
     item.product_id ||
     item.stock_level_id ||
-    descriptor.includes("product") ||
-    descriptor.includes("rental") ||
-    descriptor.includes("accessory") ||
-    descriptor.includes("stock")
-  ) {
-    return quantity > 0;
+    itemType === "product" ||
+    opportunityItemType === "principal" ||
+    opportunityItemType === "accessory";
+
+  if (isProductOrAccessory) {
+    return (
+      item.transaction_type === 1 ||
+      item.transaction_type === "1" ||
+      transactionType === "rental" ||
+      transactionType === ""
+    );
   }
 
   /*
-   * As a fallback, count any remaining opportunity line that has
-   * a positive quantity and is not one of the excluded line types.
+   * Do not use a broad quantity-only fallback.
+   * Unknown lines are safer to exclude than to count warehouse
+   * notes as equipment.
    */
-  return quantity > 0;
+  return false;
 }
 
 function quantityForItem(item) {
