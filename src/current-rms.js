@@ -1131,3 +1131,28 @@ export async function getWarehouseItemDiagnostics(
     items
   );
 }
+
+export async function getOpportunityItemDiagnostics(
+  opportunityItemId
+) {
+  const pathAttempts = [
+    `/opportunity_items/${opportunityItemId}`,
+    `/opportunity-items/${opportunityItemId}`
+  ];
+
+  let lastError;
+
+  for (const path of pathAttempts) {
+    try {
+      return await currentRequest(path);
+    } catch (error) {
+      lastError = error;
+
+      if (![400, 404, 422].includes(error.status)) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError;
+}

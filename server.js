@@ -10,6 +10,7 @@ import helmet from "helmet";
 
 import {
   getOpportunityDiagnostics,
+  getOpportunityItemDiagnostics,
   getWarehouseItemDiagnostics,
   getWarehouseJobs
 } from "./src/current-rms.js";
@@ -476,6 +477,55 @@ app.get(
 
       const diagnostics =
         await getWarehouseItemDiagnostics(
+          request.params.id
+        );
+
+      response.json(
+        diagnostics
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+app.get(
+  "/api/diagnostics/opportunity-item/:id",
+  requireDashboardKey,
+  async (
+    request,
+    response,
+    next
+  ) => {
+    try {
+      if (
+        !booleanEnv(
+          "ENABLE_DIAGNOSTICS"
+        )
+      ) {
+        return response
+          .status(404)
+          .json({
+            error:
+              "Diagnostics are disabled."
+          });
+      }
+
+      if (
+        !/^\d+$/.test(
+          request.params.id
+        )
+      ) {
+        return response
+          .status(400)
+          .json({
+            error:
+              "Opportunity item ID must be numeric."
+          });
+      }
+
+      const diagnostics =
+        await getOpportunityItemDiagnostics(
           request.params.id
         );
 
