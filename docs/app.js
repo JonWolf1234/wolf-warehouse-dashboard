@@ -1523,22 +1523,62 @@ function setQuickRange(value) {
   fetchJobs();
 }
 
+function userIsBusy() {
+  const certificateModalOpen =
+    elements.certificateModal &&
+    !elements.certificateModal.hidden;
+
+  const actionPanelOpen =
+    document.querySelector(
+      ".job-actions-row:not([hidden])"
+    );
+
+  const activeElement =
+    document.activeElement;
+
+  const editingField =
+    activeElement &&
+    (
+      activeElement.matches(
+        "input, textarea, select"
+      ) ||
+      activeElement.closest(
+        ".job-actions-panel, .certificate-modal"
+      )
+    );
+
+  return Boolean(
+    certificateModalOpen ||
+    actionPanelOpen ||
+    editingField
+  );
+}
+
 function scheduleRefresh() {
   clearInterval(
     state.refreshTimer
   );
 
   const seconds = Math.max(
-    30,
+    120,
     Number(
       config.refreshSeconds ||
-      60
+      300
     )
   );
 
   state.refreshTimer =
     setInterval(
-      () => fetchJobs(),
+      () => {
+        if (
+          state.loading ||
+          userIsBusy()
+        ) {
+          return;
+        }
+
+        fetchJobs();
+      },
       seconds * 1000
     );
 }
