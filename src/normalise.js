@@ -532,6 +532,52 @@ export function normaliseOpportunity(
   for (const item of items) {
     const quantity = quantityForItem(item);
 
+
+const possibleTextLine =
+  item.is_text === true ||
+  String(item.item_type || "").toLowerCase() === "text" ||
+  String(item.item_type_name || "").toLowerCase() === "text" ||
+  String(item.opportunity_item_type_name || "").toLowerCase() === "text" ||
+  (
+    !item.product_id &&
+    !item.stock_level_id &&
+    quantity > 0
+  );
+
+if (possibleTextLine) {
+  console.log(
+    "[Current RMS text item]",
+    JSON.stringify({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      quantity: item.quantity,
+      item_type: item.item_type,
+      item_type_name: item.item_type_name,
+      opportunity_item_type: item.opportunity_item_type,
+      opportunity_item_type_name: item.opportunity_item_type_name,
+      transaction_type: item.transaction_type,
+      transaction_type_name: item.transaction_type_name,
+      parent_id: item.parent_id,
+      parent_item_id: item.parent_item_id,
+      parent_opportunity_item_id: item.parent_opportunity_item_id,
+      source_type: item.source_type,
+      product_id: item.product_id,
+      stock_level_id: item.stock_level_id,
+      status: item.status,
+      status_name: item.status_name,
+      depth: item.depth,
+      depth_padding: item.depth_padding,
+      position: item.position,
+      is_text: item.is_text,
+      is_note: item.is_note,
+      note: item.note,
+      warehouse_note: item.warehouse_note
+    })
+  );
+}
+
+
     if (quantity <= 0) {
       continue;
     }
