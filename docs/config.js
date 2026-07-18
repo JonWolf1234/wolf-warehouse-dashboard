@@ -1,8 +1,4 @@
-export const CONFIG = {
-  apiBaseUrl: ""
-};
-
-export const CONFIG = {
+window.WAREHOUSE_CONFIG = {
   apiBaseUrl: "",
   refreshSeconds: 300
 };
