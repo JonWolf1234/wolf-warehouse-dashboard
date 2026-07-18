@@ -938,29 +938,42 @@ app.post(
         "your equipment hire";
 
       await sendCertificateEmail({
-        recipient,
+  recipient,
 
-        subject:
-          `Motor certificates - ${displayReference}`,
+  subject:
+    `Motor certificates - ${displayReference}`,
 
-        text:
-          [
-            "Hi,",
-            "",
-            `Please find attached the motor certificates for ${displayReference}.`,
-            "",
-            missing.length
-              ? `We could not locate certificates for: ${missing.join(", ")}.`
-              : "All requested certificates are attached.",
-            "",
-            "Kind regards,",
-            "",
-            process.env.SMTP_FROM_NAME ||
-              "Wolf Event Services"
-          ].join("\n"),
+  jobReference:
+    displayReference,
 
-        attachments
-      });
+  certificates:
+    found,
+
+  missing,
+
+  text:
+    [
+      "Hi,",
+      "",
+      `Please find attached the motor certificates for ${displayReference}.`,
+      "",
+      ...found.map(
+        (certificate) =>
+          `${certificate.assetNumber} - ${certificate.filename}`
+      ),
+      "",
+      missing.length
+        ? `Certificates not located: ${missing.join(", ")}.`
+        : "All requested certificates are attached.",
+      "",
+      "Kind regards,",
+      "",
+      process.env.SMTP_FROM_NAME ||
+        "Wolf Event Services"
+    ].join("\n"),
+
+  attachments
+});
 
       return response.json({
         sent: true,
