@@ -676,12 +676,6 @@ function extractAssetNumbers(value) {
   ];
 }
 
-function warehouseNotesKey(job) {
-  return `warehouseNotes:${
-    job.id || job.reference
-  }`;
-}
-
 function createCertificateResultItem({
   assetNumber,
   filename,
@@ -808,48 +802,19 @@ function wireJobActions(
     );
   });
 
+  /*
+   * Warehouse notes are read directly from
+   * the Current RMS opportunity custom field.
+   */
   const notesInput =
     actionsRow.querySelector(
       ".warehouse-notes-input"
     );
 
-  const notesMessage =
-    actionsRow.querySelector(
-      ".warehouse-notes-message"
-    );
-
-notesInput.value =
-  job.warehouseNotes || "";
-
-  actionsRow
-    .querySelector(
-      ".save-warehouse-notes"
-    )
-    .addEventListener(
-      "click",
-      () => {
-        localStorage.setItem(
-          warehouseNotesKey(job),
-          notesInput.value
-        );
-
-        notesMessage.textContent =
-          "Notes saved on this warehouse screen.";
-
-        notesMessage.classList.add(
-          "is-success"
-        );
-
-        setTimeout(() => {
-          notesMessage.textContent =
-            "";
-
-          notesMessage.classList.remove(
-            "is-success"
-          );
-        }, 2500);
-      }
-    );
+  if (notesInput) {
+    notesInput.value =
+      job.warehouseNotes || "";
+  }
 
   const serialInput =
     actionsRow.querySelector(
@@ -1052,6 +1017,9 @@ notesInput.value =
           foundCertificates.length
             ? "Enter a recipient email address to prepare the certificate email."
             : "No certificates are currently available to send.";
+
+        sendMessage.style.color =
+          "var(--muted)";
       } catch (error) {
         console.error(error);
 
@@ -1059,9 +1027,16 @@ notesInput.value =
           "Search failed";
 
         resultMessage.textContent =
-          error.message;
+          error.message ||
+          "Certificate search failed.";
 
         resultList.replaceChildren();
+
+        sendMessage.textContent =
+          "The certificate library could not be searched.";
+
+        sendMessage.style.color =
+          "var(--red)";
       } finally {
         findButton.disabled =
           false;
@@ -1082,126 +1057,135 @@ notesInput.value =
     }
   );
 
-sendButton.addEventListener(
-  "click",
-  async () => {
-    const recipient =
-      emailInput.value.trim();
+  sendButton.addEventListener(
+    "click",
+    async () => {
+      const recipient =
+        emailInput.value.trim();
 
-    const assetNumbers =
-      extractAssetNumbers(
-        serialInput.value
-      );
-
-    if (
-      !recipient ||
-      !emailInput.validity.valid
-    ) {
-      sendMessage.textContent =
-        "Enter a valid recipient email address.";
-
-      sendMessage.style.color =
-        "var(--red)";
-
-      return;
-    }
-
-    if (!foundCertificates.length) {
-      sendMessage.textContent =
-        "Find the certificates before sending.";
-
-      sendMessage.style.color =
-        "var(--red)";
-
-      return;
-    }
-
-    sendButton.disabled = true;
-    sendButton.textContent = "Sending…";
-
-    sendMessage.textContent =
-      "Preparing PDFs and sending the email…";
-
-    sendMessage.style.color =
-      "var(--muted)";
-
-    try {
-      const response = await fetch(
-        apiUrl(
-          "/api/certificates/send"
-        ),
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            "X-Dashboard-Key":
-              state.accessKey
-          },
-
-          body: JSON.stringify({
-            recipient,
-            jobReference:
-              job.reference ||
-              `Job ${job.id}`,
-            assetNumbers
-          })
-        }
-      );
-
-      const payload =
-        await response
-          .json()
-          .catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          payload.error ||
-          "The certificates could not be sent."
+      const assetNumbers =
+        extractAssetNumbers(
+          serialInput.value
         );
-      }
-
-      sendMessage.textContent =
-        `Sent ${payload.attached} certificate${
-          payload.attached === 1
-            ? ""
-            : "s"
-        } to ${payload.recipient}.`;
 
       if (
-        Array.isArray(payload.missing) &&
-        payload.missing.length
+        !recipient ||
+        !emailInput.validity.valid
       ) {
-        sendMessage.textContent +=
-          ` Missing: ${payload.missing.join(
-            ", "
-          )}.`;
+        sendMessage.textContent =
+          "Enter a valid recipient email address.";
+
+        sendMessage.style.color =
+          "var(--red)";
+
+        return;
       }
 
-      sendMessage.style.color =
-        "var(--green)";
-    } catch (error) {
-      console.error(error);
+      if (!foundCertificates.length) {
+        sendMessage.textContent =
+          "Find the certificates before sending.";
 
-      sendMessage.textContent =
-        error.message ||
-        "The certificates could not be sent.";
+        sendMessage.style.color =
+          "var(--red)";
 
-      sendMessage.style.color =
-        "var(--red)";
-    } finally {
+        return;
+      }
+
       sendButton.disabled =
-        !foundCertificates.length ||
-        !emailInput.validity.valid ||
-        !emailInput.value.trim();
+        true;
 
       sendButton.textContent =
-        "Send certificates";
+        "Sending…";
+
+      sendMessage.textContent =
+        "Preparing PDFs and sending the email…";
+
+      sendMessage.style.color =
+        "var(--muted)";
+
+      try {
+        const response =
+          await fetch(
+            apiUrl(
+              "/api/certificates/send"
+            ),
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                "X-Dashboard-Key":
+                  state.accessKey
+              },
+
+              body:
+                JSON.stringify({
+                  recipient,
+
+                  jobReference:
+                    job.reference ||
+                    `Job ${job.id}`,
+
+                  assetNumbers
+                })
+            }
+          );
+
+        const payload =
+          await response
+            .json()
+            .catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(
+            payload.error ||
+            "The certificates could not be sent."
+          );
+        }
+
+        sendMessage.textContent =
+          `Sent ${payload.attached} certificate${
+            payload.attached === 1
+              ? ""
+              : "s"
+          } to ${payload.recipient}.`;
+
+        if (
+          Array.isArray(
+            payload.missing
+          ) &&
+          payload.missing.length
+        ) {
+          sendMessage.textContent +=
+            ` Missing: ${payload.missing.join(
+              ", "
+            )}.`;
+        }
+
+        sendMessage.style.color =
+          "var(--green)";
+      } catch (error) {
+        console.error(error);
+
+        sendMessage.textContent =
+          error.message ||
+          "The certificates could not be sent.";
+
+        sendMessage.style.color =
+          "var(--red)";
+      } finally {
+        sendButton.disabled =
+          !foundCertificates.length ||
+          !emailInput.validity.valid ||
+          !emailInput.value.trim();
+
+        sendButton.textContent =
+          "Send certificates";
+      }
     }
-  }
-);
+  );
 }
 
 
