@@ -818,13 +818,8 @@ function wireJobActions(
       ".warehouse-notes-message"
     );
 
-  const savedNotes =
-    localStorage.getItem(
-      warehouseNotesKey(job)
-    );
-
-  notesInput.value =
-    savedNotes || "";
+notesInput.value =
+  job.warehouseNotes || "";
 
   actionsRow
     .querySelector(

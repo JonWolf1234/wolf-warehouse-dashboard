@@ -846,6 +846,10 @@ export function normaliseOpportunity(
       opportunityState ||
       "",
 
+      warehouseNotes:
+      opportunity.custom_fields?.warehouse_notes ??
+      "",
+
     totalItems:
       Math.round(
         totalItems * 100
