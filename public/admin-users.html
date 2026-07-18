@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wolf Staff Hub · Users</title>
+  <link rel="stylesheet" href="/public/staff-hub.css">
+</head>
+<body>
+<header class="hub-header"><img src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png" alt="Wolf Lighting"><nav><a href="/">Warehouse</a><button id="logoutButton" class="link-button">Sign out</button></nav></header>
+<main class="hub-main">
+  <section><p class="eyebrow">Administration</p><h1>Staff accounts</h1><p class="muted">Create accounts, select access and map external system IDs.</p></section>
+  <section class="panel">
+    <h2>Create user</h2>
+    <form id="userForm" class="user-grid">
+      <label>Full name<input name="fullName" required></label>
+      <label>Email<input name="email" type="email" required></label>
+      <label>Temporary password<input name="password" type="password" minlength="12" required></label>
+      <label>Employment type<select name="employmentType"><option value="full_time">Full time</option><option value="freelancer">Freelancer</option></select></label>
+      <label>Access role<select name="role"><option value="staff">Staff</option><option value="freelancer">Freelancer</option><option value="viewer">Viewer</option><option value="scheduler">Scheduler</option><option value="admin">Admin</option></select></label>
+      <label>Current RMS member ID<input name="currentRmsMemberId"></label>
+      <label>Current RMS contact ID<input name="currentRmsContactId"></label>
+      <label>Breathe employee ID<input name="breatheEmployeeId"></label>
+      <p id="formMessage" class="form-message"></p><button type="submit">Create account</button>
+    </form>
+  </section>
+  <section class="panel"><h2>Users</h2><div class="table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Role</th><th>Status</th><th>Last login</th><th></th></tr></thead><tbody id="usersBody"></tbody></table></div></section>
+</main>
+<script src="/public/admin-users.js"></script>
+</body>
+</html>

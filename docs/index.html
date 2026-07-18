@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en-GB" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta id="themeColorMeta" name="theme-color" content="#0b0d0f" />
+
+    <title>Wolf Warehouse Schedule</title>
+
+    <script>
+      (() => {
+        const savedTheme = localStorage.getItem("warehouseTheme");
+
+        const preferredTheme = window.matchMedia(
+          "(prefers-color-scheme: light)"
+        ).matches
+          ? "light"
+          : "dark";
+
+        document.documentElement.dataset.theme =
+          savedTheme || preferredTheme;
+      })();
+    </script>
+
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <div class="header-title-block">
+          <p class="eyebrow">Live operations</p>
+          <h1 id="screenTitle">Warehouse Schedule</h1>
+        </div>
+
+        <a
+          class="header-logo"
+          href="#dashboard"
+          aria-label="Wolf Lighting warehouse dashboard"
+        >
+          <img
+            src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png"
+            alt="Wolf Lighting"
+          />
+        </a>
+
+        <div class="topbar-actions">
+          <div
+            class="connection-state"
+            id="connectionState"
+            aria-live="polite"
+          >
+            <span class="state-dot" aria-hidden="true"></span>
+            <span>Not connected</span>
+          </div>
+
+          <button
+            class="button button-header"
+            id="themeToggle"
+            type="button"
+            aria-pressed="false"
+          >
+            <span
+              class="theme-icon"
+              id="themeIcon"
+              aria-hidden="true"
+            >
+              ☀
+            </span>
+
+            <span id="themeLabel">Light mode</span>
+          </button>
+
+          <button
+            class="button button-header button-fullscreen"
+            id="fullscreenButton"
+            type="button"
+          >
+            Full screen
+          </button>
+
+          <button
+            class="button button-header"
+            id="certificatesButton"
+            type="button"
+          >
+          Certificates
+          </button>
+
+          <a class="button button-header" href="/admin/users">Staff Hub</a>
+
+          <button
+            class="button button-primary"
+            id="refreshButton"
+            type="button"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="app-shell" id="dashboard">
+      <main>
+        <section
+          class="metrics-grid"
+          aria-label="Warehouse totals"
+        >
+          <article class="metric-card metric-jobs">
+            <span>Jobs shown</span>
+            <strong id="jobsMetric">0</strong>
+          </article>
+
+          <article class="metric-card metric-items">
+            <span>Items to prep</span>
+            <strong id="itemsMetric">0</strong>
+          </article>
+
+          <article class="metric-card metric-prepared">
+            <span>Items prepared</span>
+            <strong id="preparedMetric">0</strong>
+          </article>
+
+          <article class="metric-card metric-alert">
+            <span>Urgent jobs</span>
+            <strong id="urgentMetric">0</strong>
+          </article>
+        </section>
+
+<section
+  class="controls-panel"
+  aria-label="Search and date filters"
+>
+  <div class="filter-toolbar">
+
+    <div class="filter-field filter-search">
+      <label for="searchInput">Search</label>
+
+      <input
+        id="searchInput"
+        type="search"
+        placeholder="Job name, number, client or status…"
+        autocomplete="off"
+      />
+    </div>
+
+    <div class="filter-field filter-select">
+      <label for="opportunityTypeFilter">
+        Job type
+      </label>
+
+      <select id="opportunityTypeFilter">
+        <option value="all">
+          All
+        </option>
+
+        <option value="orders" selected>
+          Orders Only
+        </option>
+
+        <option value="quotes">
+          Quotes Only
+        </option>
+
+        <option value="provisional">
+          Provisional Only
+        </option>
+
+        <option value="booked-out">
+          Booked Out
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-field filter-select">
+      <label for="dateTypeSelect">
+        Date type
+      </label>
+
+      <select id="dateTypeSelect">
+        <option value="all">
+          Any job date
+        </option>
+
+        <option value="prepAt">
+          Prep date
+        </option>
+
+        <option value="loadAt">
+          Load-out date
+        </option>
+
+        <option value="returnAt">
+          Due-back date
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-field filter-date">
+      <label for="fromDate">From</label>
+
+      <input
+        id="fromDate"
+        type="date"
+      />
+    </div>
+
+    <div class="filter-field filter-date">
+      <label for="toDate">To</label>
+
+      <input
+        id="toDate"
+        type="date"
+      />
+    </div>
+
+    <div class="filter-field filter-ranges">
+      <label>Quick range</label>
+
+      <div
+        class="range-buttons"
+        aria-label="Quick date ranges"
+      >
+        <button type="button" data-range="today">
+          Today
+        </button>
+
+        <button type="button" data-range="7">
+          7 days
+        </button>
+
+        <button type="button" data-range="14">
+          14 days
+        </button>
+
+        <button type="button" data-range="30">
+          30 days
+        </button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+        <section class="table-panel">
+          <div class="table-heading">
+            <div>
+              <p class="eyebrow">Warehouse workflow</p>
+              <h2>Upcoming jobs</h2>
+
+              <p id="resultSummary">
+                Enter the warehouse passphrase to load jobs.
+              </p>
+            </div>
+
+            <div
+              class="last-updated"
+              id="lastUpdated"
+            >
+              Not updated
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>
+                    <button
+                      type="button"
+                      data-sort="statusRank"
+                    >
+                      Status
+                    </button>
+                  </th>
+
+                  <th>
+                    <button
+                      type="button"
+                      data-sort="reference"
+                    >
+                      Job
+                    </button>
+                  </th>
+
+                  <th class="optional-client">
+                    <button
+                      type="button"
+                      data-sort="customer"
+                    >
+                      Client
+                    </button>
+                  </th>
+
+                  <th class="number">
+                    <button
+                      type="button"
+                      data-sort="totalItems"
+                    >
+                      Items
+                    </button>
+                  </th>
+
+                  <th>
+                    <button
+                      type="button"
+                      data-sort="preparedPercent"
+                    >
+                      Prepared
+                    </button>
+                  </th>
+
+                  <th>
+                    <button
+                      type="button"
+                      data-sort="prepAt"
+                    >
+                      Prep date
+                    </button>
+                  </th>
+
+                  <th>
+                    <button
+                      type="button"
+                      data-sort="loadAt"
+                    >
+                      Load-out
+                    </button>
+                  </th>
+
+                  <th>
+                    <button
+                      type="button"
+                      data-sort="returnAt"
+                    >
+                      Due back
+                    </button>
+                  </th>
+
+                  <th class="more-heading">
+                    <span class="visually-hidden">
+                      More options
+                    </span>
+                  </th>
+
+                </tr>
+                
+              </thead>
+
+              <tbody id="jobsBody"></tbody>
+            </table>
+          </div>
+
+          <div
+            class="empty-state"
+            id="emptyState"
+            hidden
+          >
+            <strong>
+              No jobs match these filters.
+            </strong>
+
+            <span>
+              Try a wider date range or clear the search box.
+            </span>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div
+      class="login-overlay"
+      id="loginOverlay" hidden
+    >
+      <form
+        class="login-card"
+        id="loginForm"
+      >
+        <img
+          class="login-logo"
+          src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png"
+          alt="Wolf Lighting"
+        />
+
+        <p class="eyebrow">
+          Warehouse access
+        </p>
+
+        <h2>
+          Open the warehouse schedule
+        </h2>
+
+        <p>
+          Enter the private dashboard passphrase configured in Render.
+        </p>
+
+        <label class="field field-dark">
+          <span>
+            Dashboard passphrase
+          </span>
+
+          <input
+            id="accessKeyInput"
+            type="password"
+            required
+            autocomplete="current-password"
+          />
+        </label>
+
+        <label class="remember-row">
+          <input
+            id="rememberKey"
+            type="checkbox"
+          />
+
+          <span>
+            Remember on this warehouse screen
+          </span>
+        </label>
+
+        <p
+          class="form-error"
+          id="loginError"
+          aria-live="polite"
+        ></p>
+
+        <button
+          class="button button-primary button-wide"
+          type="submit"
+        >
+          Open dashboard
+        </button>
+      </form>
+    </div>
+
+<div
+  class="certificate-modal"
+  id="certificateModal"
+  hidden
+>
+  <div
+    class="certificate-modal-backdrop"
+    data-certificate-close
+  ></div>
+
+  <section
+    class="certificate-modal-card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="certificateModalTitle"
+  >
+    <div class="certificate-modal-header">
+      <div>
+        <p class="eyebrow">
+          Certificate library
+        </p>
+
+        <h2 id="certificateModalTitle">
+          Upload motor certificate
+        </h2>
+      </div>
+
+      <button
+        class="certificate-modal-close"
+        type="button"
+        aria-label="Close certificate upload"
+        data-certificate-close
+      >
+        ×
+      </button>
+    </div>
+
+    <form
+      id="certificateUploadForm"
+      class="certificate-upload-form"
+    >
+      <label class="field">
+        <span>Asset number</span>
+
+        <input
+          id="certificateAssetNumber"
+          name="assetNumber"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="e.g. 1019002"
+          required
+        />
+      </label>
+
+      <label class="field">
+        <span>Description</span>
+
+        <input
+          id="certificateDescription"
+          name="description"
+          type="text"
+          autocomplete="off"
+          placeholder="e.g. 250kg motor cert"
+          value="motor certificate"
+          required
+        />
+      </label>
+
+      <label class="certificate-file-field">
+        <span>PDF certificate</span>
+
+        <input
+          id="certificateFile"
+          name="certificate"
+          type="file"
+          accept="application/pdf,.pdf"
+          required
+        />
+
+        <span class="certificate-file-drop">
+          <strong>Choose a PDF</strong>
+          <small id="certificateFileName">
+            No file selected
+          </small>
+        </span>
+      </label>
+
+      <div class="certificate-filename-preview">
+        <span>Final filename</span>
+
+        <strong id="certificateFilenamePreview">
+          Asset number motor certificate.pdf
+        </strong>
+      </div>
+
+      <p
+        class="certificate-form-message"
+        id="certificateFormMessage"
+        aria-live="polite"
+      ></p>
+
+      <div class="certificate-modal-actions">
+        <button
+          class="button"
+          type="button"
+          data-certificate-close
+        >
+          Cancel
+        </button>
+
+        <button
+          class="button button-primary"
+          id="certificateUploadButton"
+          type="submit"
+        >
+          Upload certificate
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+
+<template id="jobRowTemplate">
+  <tr class="job-row">
+    <td class="status-cell">
+      <span class="status-pill"></span>
+    </td>
+
+    <td class="job-cell">
+      <a
+        class="job-link"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <strong class="job-reference"></strong>
+        <span class="job-name"></span>
+      </a>
+    </td>
+
+    <td class="client-cell optional-client"></td>
+    <td class="items-cell number"></td>
+
+    <td class="prepared-cell">
+      <div class="prepared-copy">
+        <strong></strong>
+        <span></span>
+      </div>
+
+      <div class="progress-track">
+        <span></span>
+      </div>
+    </td>
+
+    <td class="prep-cell date-cell"></td>
+    <td class="load-cell date-cell"></td>
+    <td class="return-cell date-cell"></td>
+
+    <td class="expand-cell">
+      <button
+        class="expand-button"
+        type="button"
+        aria-expanded="false"
+        aria-label="Show more options for this job"
+      >
+        +
+      </button>
+    </td>
+  </tr>
+
+  <tr class="job-actions-row" hidden>
+    <td colspan="9">
+      <div class="job-actions-panel">
+        <aside class="job-actions-navigation">
+          <p class="eyebrow">More actions</p>
+
+          <button
+            class="job-action-tab is-active"
+            type="button"
+            data-action-panel="warehouse-notes"
+          >
+            <strong>Warehouse notes</strong>
+            <span>Internal job information</span>
+          </button>
+
+          <button
+            class="job-action-tab"
+            type="button"
+            data-action-panel="motor-certificates"
+          >
+            <strong>Motor certificates</strong>
+            <span>Find and send PDFs</span>
+          </button>
+        </aside>
+
+        <div class="job-actions-content">
+          <section
+            class="job-action-view is-active"
+            data-action-view="warehouse-notes"
+          >
+            <div class="job-action-heading">
+              <div>
+                <p class="eyebrow">Warehouse</p>
+                <h3>Job notes</h3>
+              </div>
+
+              <span class="action-job-reference"></span>
+            </div>
+
+            <label class="action-field">
+              <span>Warehouse notes</span>
+
+              <textarea
+                class="warehouse-notes-input"
+                rows="7"
+                placeholder="Add notes for the warehouse team…"
+              ></textarea>
+            </label>
+
+            <div class="job-action-footer">
+              <p class="warehouse-notes-message"></p>
+
+              <button
+                class="button save-warehouse-notes"
+                type="button"
+              >
+                Save notes
+              </button>
+            </div>
+          </section>
+
+          <section
+            class="job-action-view"
+            data-action-view="motor-certificates"
+          >
+            <div class="job-action-heading">
+              <div>
+                <p class="eyebrow">Documentation</p>
+                <h3>Motor certificates</h3>
+              </div>
+
+              <span class="action-job-reference"></span>
+            </div>
+
+            <div class="certificate-action-grid">
+              <div>
+                <label class="action-field">
+                  <span>Motor serial numbers</span>
+
+                  <textarea
+                    class="motor-serial-input"
+                    rows="8"
+                    placeholder="Enter one serial number per line&#10;&#10;1017196&#10;1017206&#10;1019002"
+                  ></textarea>
+                </label>
+
+                <p class="action-help">
+                  You may also paste a copied block from Current RMS. Duplicate numbers are removed automatically.
+                </p>
+
+                <button
+                  class="button find-job-certificates"
+                  type="button"
+                >
+                  Find certificates
+                </button>
+              </div>
+
+              <div class="certificate-results-panel">
+                <div class="certificate-results-empty">
+                  <strong>No search completed</strong>
+                  <span>
+                    Enter the motor serial numbers and click Find certificates.
+                  </span>
+                </div>
+
+                <div
+                  class="certificate-results"
+                  hidden
+                >
+                  <div class="certificate-result-summary">
+                    <strong class="certificate-result-count">
+                      0 of 0 found
+                    </strong>
+
+                    <span class="certificate-result-message"></span>
+                  </div>
+
+                  <div class="certificate-result-list"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="certificate-email-section">
+              <label class="action-field">
+                <span>Email certificates to</span>
+
+                <input
+                  class="certificate-email-input"
+                  type="email"
+                  placeholder="recipient@example.com"
+                  autocomplete="email"
+                />
+              </label>
+
+              <button
+                class="button button-primary send-job-certificates"
+                type="button"
+                disabled
+              >
+                Send certificates
+              </button>
+            </div>
+
+            <p class="certificate-send-message">
+              Email sending will be connected after the certificate search is confirmed.
+            </p>
+          </section>
+        </div>
+      </div>
+    </td>
+  </tr>
+</template>
+
+    <script src="config.js?v=2"></script>
+    <script src="theme.js"></script>
+    <script type="module" src="app.js"></script>
+  </body>
+</html> 

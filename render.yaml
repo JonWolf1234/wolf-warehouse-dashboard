@@ -1,0 +1,43 @@
+databases:
+  - name: wolf-staff-hub-db
+    plan: free
+    databaseName: wolf_staff_hub
+    user: wolf_staff_hub
+
+services:
+  - type: web
+    name: wolf-staff-hub
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run migrate
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wolf-staff-hub-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: USE_MOCK_DATA
+        value: false
+      - key: CURRENT_RMS_SUBDOMAIN
+        sync: false
+      - key: CURRENT_RMS_API_KEY
+        sync: false
+      - key: CURRENT_RMS_WEBHOOK_SECRET
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: CACHE_SECONDS
+        value: 55
+      - key: MAX_OPPORTUNITIES
+        value: 45
+      - key: INCLUDE_CUSTOMER_NAME
+        value: true
+      - key: ENABLE_DIAGNOSTICS
+        value: false

@@ -1,0 +1,30 @@
+{
+  "name": "wolf-staff-hub",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wolf Staff Hub and warehouse operations dashboard",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "check": "node --check server.js && node --check src/current-rms.js && node --check src/normalise.js && node --check docs/app.js",
+    "migrate": "node scripts/migrate.js",
+    "create-admin": "node scripts/create-admin.js"
+  },
+  "dependencies": {
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "multer": "^2.2.0",
+    "nodemailer": "^9.0.3",
+    "bcryptjs": "^3.0.2",
+    "connect-pg-simple": "^10.0.0",
+    "express-session": "^1.18.2",
+    "pg": "^8.16.3"
+  }
+}
