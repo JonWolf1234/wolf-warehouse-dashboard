@@ -1105,10 +1105,16 @@ export async function getOpportunityDiagnostics(
           opportunityId
         );
 
-  return diagnosticSummary(
-    detail,
-    items
-  );
+  return {
+    ...diagnosticSummary(
+      detail,
+      items
+    ),
+
+    customFields:
+      detail.custom_fields ??
+      null
+  };
 }
 
 export async function getWarehouseItemDiagnostics(
