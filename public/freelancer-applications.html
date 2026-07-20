@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wolf Staff Hub · Freelancer Applications</title>
+  <link rel="stylesheet" href="/public/staff-hub.css">
+</head>
+<body>
+  <header class="hub-header">
+    <a class="brand-link" href="/dashboard">
+      <img src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png" alt="Wolf Lighting">
+    </a>
+    <nav>
+      <a href="/dashboard">My dashboard</a>
+      <a href="/freelancer-applications">Applications<span class="nav-badge" data-nav-badge="applications" hidden></span></a>
+      <a href="/account">My account</a>
+      <button class="link-button" id="logoutButton" type="button">Log out</button>
+    </nav>
+  </header>
+
+  <main class="hub-main">
+    <section class="page-intro">
+      <div>
+        <p class="eyebrow">Scheduling approvals</p>
+        <h1>Freelancer applications</h1>
+        <p class="muted intro-copy">
+          Review freelancers who have marked themselves available for open Current RMS service positions.
+        </p>
+      </div>
+      <button class="secondary-button" id="refreshApplications" type="button">Refresh applications</button>
+    </section>
+
+    <section class="panel">
+      <p class="muted" id="applicationsMessage">Loading applications…</p>
+      <div class="application-list" id="applicationList"></div>
+    </section>
+  </main>
+
+  <script src="/public/freelancer-applications.js"></script>
+  <script src="/public/nav-badges.js"></script>
+</body>
+</html>

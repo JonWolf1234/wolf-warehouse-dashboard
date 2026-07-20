@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wolf Staff Hub · Available Work</title>
+  <link rel="stylesheet" href="/public/staff-hub.css">
+</head>
+<body>
+  <header class="hub-header">
+    <a class="brand-link" href="/dashboard">
+      <img src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png" alt="Wolf Lighting">
+    </a>
+    <nav>
+      <a href="/dashboard">My dashboard</a>
+      <a href="/available-work">Available work<span class="nav-badge" data-nav-badge="available-work" hidden></span></a>
+      <a href="/account">My account</a>
+      <button class="link-button" id="logoutButton" type="button">Log out</button>
+    </nav>
+  </header>
+
+  <main class="hub-main">
+    <section class="page-intro">
+      <div>
+        <p class="eyebrow">Freelancer opportunities</p>
+        <h1>Available work</h1>
+        <p class="muted intro-copy">
+          Open positions that match the services configured on your account.
+          Mark yourself available and the scheduling team will review it.
+        </p>
+      </div>
+      <button class="secondary-button" id="refreshWork" type="button">Refresh opportunities</button>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow eyebrow-tight">Open positions</p>
+          <h2>Work you can apply for</h2>
+        </div>
+      </div>
+      <p class="muted" id="workMessage">Loading available work…</p>
+      <div class="available-work-grid" id="availableWorkGrid"></div>
+    </section>
+  </main>
+
+  <script src="/public/available-work.js"></script>
+  <script src="/public/nav-badges.js"></script>
+</body>
+</html>

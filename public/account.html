@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wolf Staff Hub · My account</title>
+  <link rel="stylesheet" href="/public/staff-hub.css">
+</head>
+<body>
+  <header class="hub-header">
+    <a class="brand-link" href="/dashboard" aria-label="Wolf Staff Hub home">
+      <img src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png" alt="Wolf Lighting">
+    </a>
+    <nav>
+      <a href="/dashboard">My dashboard</a>
+      <button class="link-button" id="logoutButton" type="button">Log out</button>
+    </nav>
+  </header>
+
+  <main class="hub-main account-page">
+    <section>
+      <p class="eyebrow">My account</p>
+      <h1>Account & security</h1>
+      <p class="muted intro-copy">Review your Staff Hub profile and keep your password secure.</p>
+    </section>
+
+    <section class="dashboard-grid account-grid">
+      <article class="panel">
+        <p class="eyebrow eyebrow-tight">Profile</p>
+        <h2>Your account</h2>
+        <dl class="profile-list">
+          <div><dt>Name</dt><dd id="accountName">Loading…</dd></div>
+          <div><dt>Email</dt><dd id="accountEmail">Loading…</dd></div>
+          <div><dt>Person type</dt><dd id="accountPersonType">—</dd></div>
+          <div><dt>Access role</dt><dd id="accountRole">—</dd></div>
+          <div><dt>Current RMS</dt><dd id="accountRms">—</dd></div>
+        </dl>
+      </article>
+
+      <article class="panel">
+        <p class="eyebrow eyebrow-tight">Security</p>
+        <h2>Change password</h2>
+        <p class="muted">Changing your password signs you out on every device.</p>
+
+        <form id="changePasswordForm" class="security-form">
+          <label>
+            Current password
+            <input id="currentPassword" type="password" autocomplete="current-password" required>
+          </label>
+
+          <label>
+            New password
+            <input id="newPassword" type="password" autocomplete="new-password" minlength="12" required>
+            <small>Use at least 12 characters.</small>
+          </label>
+
+          <label>
+            Confirm new password
+            <input id="confirmPassword" type="password" autocomplete="new-password" minlength="12" required>
+          </label>
+
+          <p id="changePasswordMessage" class="form-message" aria-live="polite"></p>
+          <button type="submit">Change password</button>
+        </form>
+      </article>
+    </section>
+  </main>
+
+  <script src="/public/account.js"></script>
+  <script src="/public/nav-badges.js"></script>
+</body>
+</html>

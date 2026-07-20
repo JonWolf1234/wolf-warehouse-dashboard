@@ -12,13 +12,28 @@
     <p class="eyebrow">Staff Hub</p>
     <h1>Welcome back</h1>
     <p class="muted">Sign in with the account created by an administrator.</p>
+
     <form id="loginForm">
-      <label>Email address<input id="email" type="email" autocomplete="username" required></label>
-      <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+      <label>
+        Email address
+        <input id="email" type="email" autocomplete="username" required>
+      </label>
+
+      <label>
+        Password
+        <input id="password" type="password" autocomplete="current-password" required>
+      </label>
+
+      <div class="auth-form-link">
+        <a href="/forgot-password">Forgot your password?</a>
+      </div>
+
       <p id="message" class="form-message" aria-live="polite"></p>
       <button type="submit">Sign in</button>
     </form>
   </main>
+
   <script src="/public/login.js"></script>
+  <script src="/public/nav-badges.js"></script>
 </body>
 </html>

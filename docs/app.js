@@ -122,11 +122,12 @@ function setDefaultDates() {
 }
 
 function apiUrl(path) {
-  const base = String(
-    config.apiBaseUrl || ""
-  ).replace(/\/$/, "");
+  const normalisedPath =
+    String(path || "").startsWith("/")
+      ? String(path || "")
+      : `/${String(path || "")}`;
 
-  return `${base}${path}`;
+  return normalisedPath;
 }
 
 function setConnection(type, text) {

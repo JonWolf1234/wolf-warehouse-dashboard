@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Wolf Staff Hub</title>
+  <link rel="stylesheet" href="/staff-hub.css" />
+</head>
+<body>
+  <header class="hub-header">
+    <a class="brand-link" href="/dashboard" aria-label="Wolf Staff Hub home">
+      <img src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png" alt="Wolf Lighting" />
+    </a>
+    <nav id="mainNav" aria-label="Main navigation"></nav>
+  </header>
+
+  <main class="hub-main">
+    <section class="page-intro">
+      <div>
+        <p class="eyebrow" id="dashboardEyebrow">
+          Staff hub
+        </p>
+
+        <h1 id="welcomeTitle">
+          Welcome
+        </h1>
+
+        <p
+          class="welcome-summary"
+          id="welcomeSummary"
+        >
+          Loading your schedule…
+        </p>
+
+        <p
+          class="muted intro-copy"
+          id="welcomeText"
+        >
+          Loading your dashboard…
+        </p>
+      </div>
+      <div class="page-intro-actions">
+        <button class="secondary-button" id="refreshJobs" type="button">Refresh schedule</button>
+      </div>
+    </section>
+
+    <section class="dashboard-grid dashboard-overview">
+      <article class="panel hero-panel">
+        <div class="hero-panel-topline">
+          <span class="status-pill" id="personTypePill">Account</span>
+          <span class="connection-label" id="mappingSummary">Checking connection…</span>
+        </div>
+        <p class="eyebrow eyebrow-tight">Next assignment</p>
+        <h2 id="nextJobTitle">Your upcoming work</h2>
+        <p class="hero-copy" id="nextJobText">Loading Current RMS assignments…</p>
+        <div class="hero-meta" id="nextJobMeta"></div>
+      </article>
+
+      <article class="panel profile-panel">
+        <p class="eyebrow eyebrow-tight">Your profile</p>
+        <h2>Account overview</h2>
+        <dl class="profile-list">
+          <div><dt>Current RMS</dt><dd id="rmsMapping">Checking…</dd></div>
+          <div><dt>Access level</dt><dd id="roleValue">—</dd></div>
+          <div><dt>Account status</dt><dd id="statusValue">—</dd></div>
+        </dl>
+      </article>
+    </section>
+
+    <section class="metrics-grid" aria-label="Schedule summary">
+      <article class="metric-card">
+        <span class="metric-label">Assigned jobs</span>
+        <strong id="jobsMetric">0</strong>
+      </article>
+      <article class="metric-card">
+        <span class="metric-label">Upcoming shifts</span>
+        <strong id="shiftsMetric">0</strong>
+      </article>
+      <article class="metric-card">
+        <span class="metric-label">Next call</span>
+        <strong id="nextCallMetric">—</strong>
+      </article>
+    </section>
+
+    <section class="panel jobs-panel">
+      <div class="section-heading schedule-heading">
+        <div>
+          <p class="eyebrow eyebrow-tight">Personal schedule</p>
+          <h2>My schedule</h2>
+        </div>
+
+        <div class="view-toggle" role="group" aria-label="Schedule view">
+          <button
+            type="button"
+            class="view-toggle-button is-active"
+            id="listViewButton"
+            aria-pressed="true"
+          >
+            List
+          </button>
+
+          <button
+            type="button"
+            class="view-toggle-button"
+            id="calendarViewButton"
+            aria-pressed="false"
+          >
+            Calendar
+          </button>
+        </div>
+      </div>
+
+      <p class="muted jobs-message" id="jobsMessage">Loading…</p>
+
+      <div id="listView">
+        <div class="job-cards" id="jobCards"></div>
+      </div>
+
+      <div id="calendarView" class="calendar-view" hidden>
+        <div class="calendar-toolbar">
+          <button
+            type="button"
+            class="calendar-nav-button"
+            id="previousMonth"
+            aria-label="Previous month"
+          >
+            ‹
+          </button>
+
+          <div>
+            <p class="eyebrow eyebrow-tight">Month view</p>
+            <h3 id="calendarMonthLabel">Calendar</h3>
+          </div>
+
+          <button
+            type="button"
+            class="calendar-nav-button"
+            id="nextMonth"
+            aria-label="Next month"
+          >
+            ›
+          </button>
+        </div>
+
+        <div class="calendar-weekdays" aria-hidden="true">
+          <span>Mon</span>
+          <span>Tue</span>
+          <span>Wed</span>
+          <span>Thu</span>
+          <span>Fri</span>
+          <span>Sat</span>
+          <span>Sun</span>
+        </div>
+
+        <div class="calendar-grid" id="calendarGrid"></div>
+
+        <aside
+          class="calendar-detail-panel"
+          id="calendarDetailPanel"
+          aria-live="polite"
+        >
+          <p class="eyebrow eyebrow-tight">Selected date</p>
+          <h3 id="calendarDetailTitle">Choose a date</h3>
+          <p class="muted" id="calendarDetailIntro">
+            Select a highlighted date to see your shift details.
+          </p>
+          <div id="calendarDetailContent"></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <script src="/dashboard.js"></script>
+  <script src="/public/nav-badges.js"></script>
+</body>
+</html>

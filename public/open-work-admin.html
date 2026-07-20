@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wolf Staff Hub · Publish Work</title>
+  <link rel="stylesheet" href="/public/staff-hub.css">
+</head>
+<body>
+  <header class="hub-header">
+    <a class="brand-link" href="/dashboard">
+      <img src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png" alt="Wolf Lighting">
+    </a>
+    <nav>
+      <a href="/dashboard">My dashboard</a>
+      <a href="/open-work-admin">Publish work</a>
+      <a href="/freelancer-applications">Applications<span class="nav-badge" data-nav-badge="applications" hidden></span></a>
+      <a href="/account">My account</a>
+      <button class="link-button" id="logoutButton" type="button">Log out</button>
+    </nav>
+  </header>
+
+  <main class="hub-main">
+    <section class="page-intro">
+      <div>
+        <p class="eyebrow">Available Work control</p>
+        <h1>Publish open positions</h1>
+        <p class="muted intro-copy">
+          Review unfilled Current RMS service positions before making them visible to freelancers.
+          Publish to all suitable freelancers, select a private audience, or exclude individuals.
+        </p>
+      </div>
+
+      <div class="page-intro-actions">
+        <button class="secondary-button" id="refreshOpenWork" type="button">
+          Refresh Current RMS
+        </button>
+      </div>
+    </section>
+
+    <section class="metrics-grid open-work-metrics">
+      <article class="metric-card">
+        <span class="metric-label">Open positions</span>
+        <strong id="openMetric">0</strong>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-label">Awaiting review</span>
+        <strong id="draftMetric">0</strong>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-label">Published</span>
+        <strong id="publishedMetric">0</strong>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-label">Applications</span>
+        <strong id="applicationsMetric">0</strong>
+      </article>
+
+      <article class="metric-card">
+        <span class="metric-label">Filled / closed</span>
+        <strong id="closedMetric">0</strong>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading schedule-heading">
+        <div>
+          <p class="eyebrow eyebrow-tight">Current RMS feed</p>
+          <h2>Open positions</h2>
+        </div>
+      </div>
+
+      <div class="open-work-toolbar">
+        <label class="open-work-search">
+          <span class="sr-only">Search open positions</span>
+          <input
+            id="openWorkSearch"
+            type="search"
+            placeholder="Search job, reference, client or service"
+            autocomplete="off"
+          >
+        </label>
+
+        <div class="view-toggle" role="group" aria-label="Publication filter">
+          <button class="view-toggle-button is-active" data-filter="review" type="button">Review</button>
+          <button class="view-toggle-button" data-filter="published" type="button">Published</button>
+          <button class="view-toggle-button" data-filter="returned" type="button">Returned</button>
+          <button class="view-toggle-button" data-filter="filled" type="button">Filled</button>
+          <button class="view-toggle-button" data-filter="closed" type="button">Closed</button>
+          <button class="view-toggle-button" data-filter="all" type="button">All</button>
+        </div>
+      </div>
+
+      <p class="muted" id="openWorkMessage">Loading open positions…</p>
+      <div class="open-work-admin-grid" id="openWorkGrid"></div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="publicationModal" hidden>
+    <section class="modal-card publication-modal-card" role="dialog" aria-modal="true" aria-labelledby="publicationTitle">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow eyebrow-tight">Publication settings</p>
+          <h2 id="publicationTitle">Publish position</h2>
+          <p class="muted" id="publicationSubtitle"></p>
+        </div>
+        <button class="icon-button" id="closePublicationModal" type="button" aria-label="Close">×</button>
+      </div>
+
+      <form id="publicationForm" class="publication-form">
+        <input type="hidden" id="publicationItemId">
+
+        <div class="publication-form-grid">
+          <label>
+            Publication status
+            <select id="publicationStatus">
+              <option value="published">Published</option>
+              <option value="draft">Draft / unpublished</option>
+              <option value="ignored">Ignore this position</option>
+              <option value="closed">Closed</option>
+            </select>
+          </label>
+
+          <label>
+            Audience
+            <select id="publicationAudience">
+              <option value="all_suitable">All suitable freelancers</option>
+              <option value="selected">Selected freelancers only</option>
+            </select>
+          </label>
+
+          <label>
+            Application deadline
+            <input id="publicationDeadline" type="datetime-local">
+          </label>
+
+          <label>
+            Freelancer-facing note
+            <input id="publicationFreelancerNote" placeholder="e.g. IPAF required">
+          </label>
+        </div>
+
+        <label>
+          Private admin note
+          <textarea id="publicationAdminNote" rows="3" placeholder="Visible only to approvers"></textarea>
+        </label>
+
+        <section class="audience-section">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow eyebrow-tight">Audience control</p>
+              <h3 id="audienceHeading">Exclude individual freelancers</h3>
+            </div>
+            <input class="audience-search" id="freelancerSearch" type="search" placeholder="Search freelancers">
+          </div>
+
+          <p class="muted" id="audienceHelp">
+            Tick anyone who should not see this position.
+          </p>
+
+          <div class="freelancer-picker" id="freelancerPicker"></div>
+        </section>
+
+        <p class="form-message" id="publicationMessage"></p>
+
+        <div class="modal-actions">
+          <button class="secondary-button" id="cancelPublication" type="button">Cancel</button>
+          <button type="submit">Save publication</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+
+  <script src="/public/open-work-admin.js"></script>
+  <script src="/public/nav-badges.js"></script>
+</body>
+</html>

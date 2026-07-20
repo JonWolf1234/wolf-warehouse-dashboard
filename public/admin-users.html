@@ -7,25 +7,158 @@
   <link rel="stylesheet" href="/public/staff-hub.css">
 </head>
 <body>
-<header class="hub-header"><img src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png" alt="Wolf Lighting"><nav><a href="/">Warehouse</a><button id="logoutButton" class="link-button">Sign out</button></nav></header>
-<main class="hub-main">
-  <section><p class="eyebrow">Administration</p><h1>Staff accounts</h1><p class="muted">Create accounts, select access and map external system IDs.</p></section>
-  <section class="panel">
-    <h2>Create user</h2>
-    <form id="userForm" class="user-grid">
-      <label>Full name<input name="fullName" required></label>
-      <label>Email<input name="email" type="email" required></label>
-      <label>Temporary password<input name="password" type="password" minlength="12" required></label>
-      <label>Employment type<select name="employmentType"><option value="full_time">Full time</option><option value="freelancer">Freelancer</option></select></label>
-      <label>Access role<select name="role"><option value="staff">Staff</option><option value="freelancer">Freelancer</option><option value="viewer">Viewer</option><option value="scheduler">Scheduler</option><option value="admin">Admin</option></select></label>
-      <label>Current RMS member ID<input name="currentRmsMemberId"></label>
-      <label>Current RMS contact ID<input name="currentRmsContactId"></label>
-      <label>Breathe employee ID<input name="breatheEmployeeId"></label>
-      <p id="formMessage" class="form-message"></p><button type="submit">Create account</button>
-    </form>
-  </section>
-  <section class="panel"><h2>Users</h2><div class="table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Role</th><th>Status</th><th>Last login</th><th></th></tr></thead><tbody id="usersBody"></tbody></table></div></section>
-</main>
-<script src="/public/admin-users.js"></script>
+  <header class="hub-header">
+    <img src="https://static.wixstatic.com/media/e9d01f_4fdd958481294a7d81012651d06a23c7~mv2.png" alt="Wolf Lighting">
+    <nav>
+      <a href="/dashboard">My dashboard</a>
+      <a href="/warehouse/">Warehouse</a>
+      <button id="logoutButton" class="link-button" type="button">Sign out</button>
+    </nav>
+  </header>
+
+  <main class="hub-main">
+    <section>
+      <p class="eyebrow">Administration</p>
+      <h1>Staff accounts</h1>
+      <p class="muted">Create accounts, manage access and keep external-system mappings accurate.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Create user</h2>
+      <form id="userForm" class="user-grid">
+        <label>Full name<input name="fullName" required></label>
+        <label>Email<input name="email" type="email" required></label>
+        <label>Temporary password<input name="password" type="password" minlength="12" required></label>
+        <label>Employment type<select name="employmentType"><option value="full_time">Full time</option><option value="freelancer">Freelancer</option></select></label>
+        <label>Person type<select name="personType"><option value="staff">Staff</option><option value="freelancer">Freelancer</option></select></label>
+        <label>Access role<select name="role"><option value="staff">Staff</option><option value="freelancer">Freelancer</option><option value="viewer">Viewer</option><option value="scheduler">Scheduler</option><option value="admin">Admin</option></select></label>
+        <label>Current RMS record type<select name="currentRmsRecordType"><option value="member">Member</option><option value="contact">Contact</option><option value="none">No mapping</option></select></label>
+        <label>Current RMS record ID<input name="currentRmsRecordId" inputmode="numeric"></label>
+
+        <label class="checkbox-field">
+          <input type="checkbox" id="canOpenCurrentRms" name="canOpenCurrentRms">
+          <span class="checkbox-copy">
+            <strong>Has Current RMS login</strong>
+            <small>Show buttons that open opportunities directly in Current RMS.</small>
+          </span>
+        </label>
+
+        <label>Breathe employee ID<input name="breatheEmployeeId"></label>
+
+        <label>
+          Suitable Current RMS service IDs
+          <input
+            id="suitableServiceIds"
+            name="suitableServiceIds"
+            placeholder="e.g. 547, 620"
+          >
+          <small>Comma-separated service IDs used to match Available Work. Leave blank to show all open positions.</small>
+        </label>
+
+        <label class="checkbox-field">
+          <input
+            type="checkbox"
+            id="canApproveFreelancers"
+            name="canApproveFreelancers"
+          >
+          <span class="checkbox-copy">
+            <strong>Can approve freelancer applications</strong>
+            <small>Allows this user to accept or decline freelancers for available positions.</small>
+          </span>
+        </label>
+        <p id="formMessage" class="form-message"></p>
+        <button type="submit">Create account</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow eyebrow-tight">Account management</p>
+          <h2>Users</h2>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Role</th>
+              <th>Current RMS</th>
+              <th>Status</th>
+              <th>Last login</th>
+              <th>Manage</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="editUserModal" hidden>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editUserTitle">
+      <div class="modal-heading">
+        <div>
+          <p class="eyebrow eyebrow-tight">Account management</p>
+          <h2 id="editUserTitle">Edit user</h2>
+        </div>
+        <button type="button" class="icon-button" id="closeEditUser" aria-label="Close edit user">×</button>
+      </div>
+
+      <form id="editUserForm" class="modal-grid">
+        <input type="hidden" id="editUserId">
+        <label>Full name<input id="editFullName" required></label>
+        <label>Email<input id="editEmail" type="email" required></label>
+        <label>Employment type<select id="editEmploymentType"><option value="full_time">Full time</option><option value="freelancer">Freelancer</option></select></label>
+        <label>Person type<select id="editPersonType"><option value="staff">Staff</option><option value="freelancer">Freelancer</option></select></label>
+        <label>Access role<select id="editRole"><option value="staff">Staff</option><option value="freelancer">Freelancer</option><option value="viewer">Viewer</option><option value="scheduler">Scheduler</option><option value="admin">Admin</option></select></label>
+        <label>Account status<select id="editStatus"><option value="active">Active</option><option value="suspended">Suspended</option><option value="archived">Archived</option></select></label>
+        <label>Current RMS record type<select id="editCurrentRmsRecordType"><option value="member">Member</option><option value="contact">Contact</option><option value="none">No mapping</option></select></label>
+        <label>Current RMS record ID<input id="editCurrentRmsRecordId" inputmode="numeric"></label>
+
+        <label class="checkbox-field modal-checkbox">
+          <input type="checkbox" id="editCanOpenCurrentRms">
+          <span class="checkbox-copy">
+            <strong>Has Current RMS login</strong>
+            <small>Show buttons that open opportunities directly in Current RMS.</small>
+          </span>
+        </label>
+
+        <label>Breathe employee ID<input id="editBreatheEmployeeId"></label>
+
+        <label>
+          Suitable Current RMS service IDs
+          <input
+            id="editSuitableServiceIds"
+            placeholder="e.g. 547, 620"
+          >
+          <small>Comma-separated service IDs. Leave blank to allow all open services.</small>
+        </label>
+
+        <label class="checkbox-field modal-checkbox">
+          <input
+            type="checkbox"
+            id="editCanApproveFreelancers"
+          >
+          <span class="checkbox-copy">
+            <strong>Can approve freelancer applications</strong>
+            <small>Allows this user to review and approve available-work applications.</small>
+          </span>
+        </label>
+        <p id="editUserMessage" class="form-message modal-message"></p>
+
+        <div class="modal-actions">
+          <button type="button" class="secondary-button" id="cancelEditUser">Cancel</button>
+          <button type="submit">Save changes</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script src="/public/admin-users.js"></script>
+  <script src="/public/nav-badges.js"></script>
 </body>
 </html>
